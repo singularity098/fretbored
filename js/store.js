@@ -16,6 +16,7 @@
       themeVersion: 0, // bumped when the default dot theme changes, to migrate saved defaults
       wood: 'ebony',
       orientation: 'horizontal',
+      controlsOpen: false, // fretboard settings section expanded (shared by all tabs)
       lefty: false,
       customTunings: [],
     },

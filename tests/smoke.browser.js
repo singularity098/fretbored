@@ -79,6 +79,19 @@ const check = (label, actual, expected) => {
     await page.waitForTimeout(400);
     const P = `[${name}]`;
 
+    // Fretboard settings: folded by default; opening it on one tab opens it on the others and is remembered.
+    const fbOpen = (tab) => page.$eval(`#panel-${tab} .fb-settings`, (d) => d.open);
+    check(`${P} fretboard settings folded by default`, String(await fbOpen('scales')), 'false');
+    check(`${P} fretboard settings header shows tuning`, (await page.textContent('#panel-scales .fb-settings-tuning')).trim(), 'Standard · E A D G B E');
+    await page.click('#panel-scales .fb-settings summary');
+    await page.click('#tab-chords');
+    await page.waitForTimeout(200);
+    check(`${P} opening settings on Scales opens them on Chords`, String(await fbOpen('chords')), 'true');
+    await page.click('#panel-chords .fb-settings summary');
+    await page.click('#tab-scales');
+    await page.waitForTimeout(200);
+    check(`${P} closing on Chords closes on Scales`, String(await fbOpen('scales')), 'false');
+
     // Scales: remove F (low E, fret 1), then make A the root (right-click / Set-root mode).
     await page.click('#panel-scales .cell[data-s="0"][data-f="1"]');
     await page.waitForTimeout(150);

@@ -11,6 +11,7 @@
 - On the Scales and Chords tabs, a slim bar pinned under the tabs shows the current scale or chord (name, notes, chord position) with a play button and a back-to-top button whenever the title has scrolled out of view
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
 - For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from
+  - The settings sit in a collapsible "Fretboard settings" section on every tab with a fretboard (Scales, Chords, Arpeggios, Trainer); its header shows the current tuning. It starts folded; opening or closing it applies to all tabs and is remembered
   - Preset tunings per string count, including drop tunings for 7-string (Drop A, Drop G♯, Drop G) and 8-string (Drop E, Drop E♭, Drop D) guitars
   - Fully custom tuning editor: set each string's note and octave, name it, save it; custom tunings can be edited or deleted later
   - Dot labels toggle between note names and interval degrees (1, ♭3, 5 …)
@@ -68,7 +69,6 @@
 - Progress saved on the device: questions and accuracy for each of the last 7 days (bar chart), accuracy by note and by string with weak ones flagged; Reset progress button
 - Immediate feedback: correct answers flash green and move on; a wrong answer marks the pick red, shows the right note on the fretboard and button, then moves on
 - Keyboard: letter keys A–G answer naturals, Shift+letter answers the sharp
-- On this tab the shared fretboard settings (strings, tuning, frets, wood, dots…) sit in a collapsible "Fretboard settings" section, showing the current tuning, so the game fits on a phone screen
 
 ##### Metronome
 - A full featured metronome, allowing the user to adjust tempo, tap tempo, accents (meter, beats, division), and a trainer mode which allows a user configurable increase in tempo from a start to end tempo at steps, and also a gradually accelerating mode

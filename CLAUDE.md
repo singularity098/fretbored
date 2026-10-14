@@ -36,7 +36,7 @@ Script order in `index.html` matters:
 | `js/store.js` | `FS.settings` (persisted in localStorage key `fretbored:v1`), `FS.save()`, event bus `FS.on/emit`, tuning helpers, `FS.toast`, DOM helper `FS.h(tag, attrs, ...children)` |
 | `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote`, `prepare`), click samples (`loadSamples`, `playSample`, `playBuffer`) |
 | `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Arpeggios/Trainer), wood + dot themes, horizontal/vertical layout, tap / long-press / right-click handling. Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f) }` — `color` overrides the theme (dark label), `isActive` shades other cells |
-| `js/fbcontrols.js` | Shared fretboard settings bar + custom tuning editor dialog |
+| `js/fbcontrols.js` | Shared fretboard settings bar (inside a collapsible `details.fb-settings`, open state in `fretboard.controlsOpen`, synced across tabs via the `fbcontrols:open` event) + custom tuning editor dialog |
 | `js/nowbar.js` | Pinned "now viewing" bar shown when a tab's title scrolls away |
 | `js/scales.js`, `chords.js`, `arpeggios.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
 | `js/pitch.js` | `FS.pitch` — McLeod pitch detector with FFT autocorrelation (pure, unit-tested) |
@@ -44,7 +44,8 @@ Script order in `index.html` matters:
 | `css/style.css` | All styles; colours are CSS variables on `:root` / `[data-theme='light']` |
 
 Events: `fretboard` (any fretboard setting or tuning changed → re-render), `tab` (tab switched),
-`scales:set` (Circle → Scales hand-off).
+`scales:set` (Circle → Scales hand-off), `fbcontrols:open` (settings section opened/closed).
+Tests that use fretboard settings must open `.fb-settings` first (it starts folded).
 
 Settings: add new keys to `DEFAULTS` in `store.js`. `merge()` drops unknown keys and replaces
 values whose type doesn't match the default (a default of `null` accepts anything). A nested

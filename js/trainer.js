@@ -165,7 +165,6 @@
 
     const fbControls = h('div');
     const fbHost = h('div');
-    const tuningLabel = h('span', { class: 'tr-settings-tuning' });
 
     panel.append(
       h('div', { class: 'card controls' },
@@ -184,13 +183,7 @@
         timedBox
       ),
       h('div', { class: 'card board-card' },
-        // Collapsed so the game fits on a phone screen; same shared settings as the other tabs.
-        h('details', { class: 'tr-settings' },
-          h('summary', null,
-            h('span', { class: 'tr-settings-title' }, 'Fretboard settings'),
-            h('span', { class: 'tr-settings-hint' }, 'strings, tuning, frets, wood, dots…'),
-            tuningLabel),
-          fbControls),
+        fbControls,
         promptRow,
         fbHost,
         answersTitle,
@@ -438,7 +431,6 @@
         );
       });
       options.forEach((o) => (o.input.checked = !!st[o.key]));
-      tuningLabel.textContent = `${FS.currentTuning().name} · ${FS.tuningLabel(FS.currentTuning())}`;
       answers.hidden = st.mode !== 'name';
       answers.classList.toggle('naturals', !!st.naturals);
       answersTitle.hidden = st.mode !== 'name';

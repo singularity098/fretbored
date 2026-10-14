@@ -77,8 +77,27 @@
 
     const field = (label, ...ctl) => h('label', { class: 'field' }, h('span', { class: 'field-label' }, label), ...ctl);
 
-    container.classList.add('fb-controls');
-    container.append(
+    // Collapsible: folded by default; open/closed is shared by every tab and remembered.
+    const tuningLabel = h('span', { class: 'fb-settings-tuning' });
+    const controls = h('div', { class: 'fb-controls' });
+    const details = h('details', { class: 'fb-settings' },
+      h('summary', null,
+        h('span', { class: 'fb-settings-title' }, 'Fretboard settings'),
+        h('span', { class: 'fb-settings-hint' }, 'strings, tuning, frets, wood, dots…'),
+        tuningLabel),
+      controls);
+    details.open = !!fb().controlsOpen;
+    details.addEventListener('toggle', () => {
+      if (fb().controlsOpen === details.open) return;
+      fb().controlsOpen = details.open;
+      FS.save();
+      FS.emit('fbcontrols:open', details.open);
+    });
+    FS.on('fbcontrols:open', (open) => {
+      if (details.open !== open) details.open = open;
+    });
+    container.append(details);
+    controls.append(
       field('Strings', stringsSel),
       field('Tuning', h('div', { class: 'inline' }, tuningSel, editBtn)),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Frets'), fretSeg),
@@ -112,6 +131,7 @@
       woodSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.wood));
       swatches.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.dots));
       lefty.checked = !!s.lefty;
+      tuningLabel.textContent = `${cur.name} · ${FS.tuningLabel(cur)}`;
     }
     sync();
     FS.on('fretboard', sync);
