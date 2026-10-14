@@ -168,5 +168,14 @@
     return src;
   }
 
-  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, samples };
+  // Play a pre-mixed buffer whose gain is already baked in (one node instead of two).
+  function playBuffer(buf, when) {
+    const src = getCtx().createBufferSource();
+    src.buffer = buf;
+    src.connect(getCtx().destination);
+    src.start(when);
+    return src;
+  }
+
+  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, playBuffer, samples };
 })();

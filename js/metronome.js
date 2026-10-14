@@ -154,12 +154,14 @@
       if (!eng.running) return;
       eng.running = false;
       stopTicker();
-      // Cancel clicks that haven't sounded yet; let one already playing finish (cutting it pops).
+      // Cancel beats that haven't started. For the beat that is playing, stop just before its
+      // next subdivision click, so the click currently sounding isn't cut off (which pops).
       const now = FS.audio.ctx().currentTime;
       for (const s of eng.sources) {
-        if (s.time <= now) continue;
+        const next = s.onsets.find((t) => t > now);
+        if (next === undefined) continue;
         try {
-          s.src.stop();
+          s.src.stop(next);
         } catch (e) {
           /* already finished */
         }
@@ -185,25 +187,54 @@
         scheduleBeat(eng.nextTime, 60 / eng.liveBpm);
         advance();
       }
-      const cutoff = ctx.currentTime - 1;
+      const cutoff = ctx.currentTime - 4; // a beat buffer can last 3 s at 20 BPM
       if (eng.sources.length > 64) eng.sources = eng.sources.filter((s) => s.time > cutoff);
     }
 
-    function click(name, time, gain) {
-      const src = FS.audio.playSample(name, time, gain);
-      if (src) eng.sources.push({ src, time });
+    /*
+     * Each beat — its click plus all subdivision clicks — is mixed into one buffer and played
+     * with a single source node. Creating a node per click is cheap in Chromium but heavy in
+     * Firefox on Android, where it causes crackles. Click positions are rounded to the nearest
+     * sample, so timing stays sample-accurate.
+     */
+    const beatCache = new Map();
+    function beatBuffer(lvl, dur) {
+      const set = SOUND_SETS[m.sound];
+      const offs = SUB_BY_ID[m.subdivision];
+      const key = [m.sound, lvl, m.subdivision, dur.toFixed(6), m.volume, m.subVolume].join('|');
+      if (beatCache.has(key)) return beatCache.get(key);
+      const ctx = FS.audio.ctx();
+      const sr = ctx.sampleRate;
+      const S = FS.audio.samples;
+      const parts = [];
+      if (lvl > 0) parts.push([S[lvl === 3 ? set.accent : set.beat], 0, LEVEL_GAIN[lvl] * m.volume]);
+      for (let i = 1; i < offs.length; i++) parts.push([S[set.sub], Math.round(offs[i] * dur * sr), m.subVolume * m.volume * 0.75]);
+      const live = parts.filter((p) => p[0] && p[2] > 0);
+      let buf = null;
+      if (live.length) {
+        const len = Math.max(...live.map(([b, at]) => at + b.length));
+        buf = ctx.createBuffer(1, len, sr);
+        const out = buf.getChannelData(0);
+        for (const [b, at, gain] of live) {
+          const d = b.getChannelData(0);
+          for (let j = 0; j < d.length; j++) out[at + j] += d[j] * gain;
+        }
+      }
+      if (beatCache.size > 48) beatCache.clear(); // the gradual trainer makes a new length every beat
+      beatCache.set(key, buf);
+      return buf;
     }
 
     function scheduleBeat(time, dur) {
-      const set = SOUND_SETS[m.sound];
-      const vol = m.volume;
       const cycle = Math.max(1, m.gap.play) + Math.max(0, m.gap.mute);
       const silent = m.gap.on && m.gap.mute > 0 && eng.bar % cycle >= Math.max(1, m.gap.play);
       const lvl = m.levels[eng.beat] === undefined ? 2 : m.levels[eng.beat];
       if (!silent) {
-        if (lvl > 0) click(lvl === 3 ? set.accent : set.beat, time, LEVEL_GAIN[lvl] * vol);
-        const offs = SUB_BY_ID[m.subdivision];
-        for (let i = 1; i < offs.length; i++) click(set.sub, time + offs[i] * dur, m.subVolume * vol * 0.75);
+        const buf = beatBuffer(lvl, dur);
+        if (buf) {
+          const offs = SUB_BY_ID[m.subdivision];
+          eng.sources.push({ src: FS.audio.playBuffer(buf, time), time, onsets: offs.map((o) => time + o * dur) });
+        }
       }
       eng.queue.push({ time, dur, beat: eng.beat, bar: eng.bar, n: eng.count, silent, lvl, bpm: eng.liveBpm });
     }
