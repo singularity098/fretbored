@@ -1,4 +1,4 @@
-# Fretbored
+# <img src="assets/icon.svg" width="32" height="32" alt=""> Fretbored
 
 Guitar scales, chords, circle of fifths and a precise metronome — in the browser, with no dependencies.
 

@@ -52,6 +52,9 @@ object default only keeps the keys it lists, so free-form maps (e.g. `trainer.st
 to `null` and be initialised in code. To change a default for people who already have the old one
 saved, bump a version key and migrate once in `store.js` (see `fretboard.themeVersion`).
 
+The app icon (`assets/icon.svg`) uses the same Circle colours. It is duplicated inline in
+`index.html` as the favicon data URI and the header `.logo` SVG — keep all three in sync.
+
 Dot themes live in `FS.DOT_THEMES` (`fretboard.js`). Default is `circle` — the owner asked for the
 circle-of-fifths colours (coral root, violet notes, white labels) everywhere a fretboard appears.
 
