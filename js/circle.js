@@ -259,6 +259,7 @@
       const ctx = FS.audio.ctx();
       const md = modeData();
       const base = 52 + t.mod12(st.tonic - 4);
+      FS.audio.prepare(md.scale.intervals.concat(12).map((iv) => base + iv));
       const t0 = ctx.currentTime + 0.05;
       md.scale.intervals.concat(12).forEach((iv, i) => FS.audio.playNote(base + iv, t0 + i * 0.28, 0.45, 0.55));
     }
@@ -267,6 +268,7 @@
       const ctx = FS.audio.ctx();
       const c = d.seventh || d.triad;
       const base = 48 + d.pc;
+      FS.audio.prepare(c.intervals.map((iv) => base + iv));
       const t0 = ctx.currentTime + 0.04;
       c.intervals.forEach((iv, i) => FS.audio.playNote(base + iv, t0 + i * 0.035, 1.6, 0.35));
     }

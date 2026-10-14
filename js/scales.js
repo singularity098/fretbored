@@ -235,6 +235,7 @@
       const bump = tuning.length <= 5 ? 12 : 0; // bass notes are muddy on a laptop speaker
       const seq = relIntervals().map((iv) => base + iv).concat(base + 12);
       const step = 0.3;
+      FS.audio.prepare(seq.map((m) => m + bump));
       const t0 = ctx.currentTime + 0.05;
       const timers = [];
       seq.forEach((midi, i) => {

@@ -12,7 +12,9 @@
   function getCtx() {
     if (!ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
-      ctx = new AC({ latencyHint: 'interactive' });
+      // Everything is scheduled ahead of time, so a larger output buffer costs nothing in
+      // accuracy and avoids the underruns ("crackles") that tiny buffers cause under load.
+      ctx = new AC({ latencyHint: 'playback' });
       master = ctx.createDynamicsCompressor();
       master.threshold.value = -10;
       master.knee.value = 6;
@@ -55,20 +57,32 @@
     for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(d[i]));
     const norm = peak ? 0.9 / peak : 1;
     const fade = Math.floor(sr * 0.3);
+    const attack = Math.floor(sr * 0.0015); // soften the pick transient
     for (let i = 0; i < len; i++) {
       d[i] *= norm;
+      if (i < attack) d[i] *= i / attack;
       if (i > len - fade) d[i] *= (len - i) / fade;
     }
     return { buffer: buf, rate: (P + 0.5) / exact };
   }
 
-  function playNote(midi, when, duration, gain) {
-    const c = getCtx();
+  function getPluck(midi) {
     let p = pluckCache.get(midi);
     if (!p) {
       p = makePluck(midi);
       pluckCache.set(midi, p);
     }
+    return p;
+  }
+
+  // Render any uncached notes now, so scheduling a phrase isn't delayed by synthesis.
+  function prepare(midis) {
+    midis.forEach(getPluck);
+  }
+
+  function playNote(midi, when, duration, gain) {
+    const c = getCtx();
+    const p = getPluck(midi);
     const src = c.createBufferSource();
     src.buffer = p.buffer;
     src.playbackRate.value = p.rate;
@@ -92,7 +106,21 @@
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     const c = getCtx();
     // Callback form for older Safari.
-    return new Promise((resolve, reject) => c.decodeAudioData(bytes.buffer, resolve, reject));
+    return new Promise((resolve, reject) => c.decodeAudioData(bytes.buffer, resolve, reject)).then(smoothEdges);
+  }
+
+  // Some samples start or end on a non-zero value (the classic clicks are cut off
+  // mid-decay), which pops. Fade the first 0.5 ms and last 6 ms to zero.
+  function smoothEdges(buf) {
+    const fadeIn = Math.floor(buf.sampleRate * 0.0005);
+    const fadeOut = Math.min(Math.floor(buf.sampleRate * 0.006), Math.floor(buf.length / 3));
+    for (let ch = 0; ch < buf.numberOfChannels; ch++) {
+      const d = buf.getChannelData(ch);
+      const n = d.length;
+      for (let i = 0; i < fadeIn; i++) d[i] *= i / fadeIn;
+      for (let i = 0; i < fadeOut; i++) d[n - 1 - i] *= i / fadeOut;
+    }
+    return buf;
   }
 
   function beep(freq, dur) {
@@ -140,5 +168,5 @@
     return src;
   }
 
-  FS.audio = { ctx: getCtx, playNote, loadSamples, playSample, samples };
+  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, samples };
 })();

@@ -152,7 +152,10 @@
       if (!eng.running) return;
       eng.running = false;
       stopTicker();
+      // Cancel clicks that haven't sounded yet; let one already playing finish (cutting it pops).
+      const now = FS.audio.ctx().currentTime;
       for (const s of eng.sources) {
+        if (s.time <= now) continue;
         try {
           s.src.stop();
         } catch (e) {

@@ -328,6 +328,7 @@
       const tuning = FS.currentTuning().notes;
       const bump = tuning.length <= 5 ? 12 : 0;
       let i = 0;
+      FS.audio.prepare(fr.map((f, s) => tuning[s] + f + bump).filter((m, s) => fr[s] >= 0));
       const t0 = ctx.currentTime + 0.04;
       fr.forEach((f, s) => {
         if (f < 0) return;
