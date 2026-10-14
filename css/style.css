@@ -622,6 +622,27 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
   .tuner-layout { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ---------------------------------------------------------------- Now-viewing bar */
+
+.now-bar {
+  position: fixed; left: 0; right: 0; top: var(--topbar-h, 64px); z-index: 15;
+  padding: 8px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
+  pointer-events: none; opacity: 0; transform: translateY(-8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.now-bar.show { opacity: 1; transform: none; }
+.now-bar.show .nb-inner { pointer-events: auto; }
+.nb-inner {
+  max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 14px;
+  padding: 8px 8px 8px 16px; box-shadow: var(--shadow);
+}
+.nb-text { flex: 1; min-width: 0; }
+.nb-title { font-weight: 750; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nb-notes { font-size: 12.5px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.nb-action { flex: none; }
+.nb-up { flex: none; width: 34px; height: 34px; font-size: 16px; font-weight: 700; }
+
 /* ---------------------------------------------------------------- Dialog, toast, footer */
 
 dialog {

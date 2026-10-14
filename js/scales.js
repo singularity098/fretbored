@@ -76,6 +76,7 @@
     });
 
     const pcAt = (s, f) => t.mod12(FS.currentTuning().notes[s] + f);
+    const nowBar = FS.createNowBar(panel, panel.querySelector('.hero'), () => play());
 
     /* ---- State changes ---- */
 
@@ -206,6 +207,12 @@
       }
 
       playBtn.innerHTML = playing ? '■ Stop' : '▶ Play';
+      nowBar.set({
+        accent: t.pretty(sp.root),
+        rest: scale ? scale.name : 'Custom scale',
+        notes: sp.names.map(t.pretty).join('  ·  '),
+        action: playing ? '■ Stop' : '▶ Play',
+      });
       renderBoard(sp);
     }
 

@@ -62,6 +62,7 @@
 
     FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, { onToggle: edit, onRoot: edit });
+    const nowBar = FS.createNowBar(panel, panel.querySelector('.chord-hero'), () => strum());
 
     /* ---- Voicings ---- */
 
@@ -230,6 +231,14 @@
           }
         }
       }
+
+      const pos = st.custom ? 'Custom shape' : v.length ? `Position ${st.position + 1}` : '';
+      nowBar.set({
+        accent: unknown ? '?' : chordName(),
+        rest: unknown ? 'Unknown chord' : spelled().chord.id === 'maj' ? 'major' : '',
+        notes: (unknown ? playedPcs.map((pc) => t.pretty(t.pcLabel(pc).split('/')[0])) : sp.names.map(t.pretty)).join('  ·  ') + (pos ? `   —   ${pos}` : ''),
+        action: fr ? '▶ Strum' : '',
+      });
 
       renderBox(fr);
       renderBoard();

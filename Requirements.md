@@ -8,6 +8,7 @@
   - On narrow screens the fretboard scrolls sideways by default; a Layout toggle (phones only) switches it to a vertical fretboard that scrolls down the page
 - Link to github repository at the top right corner
 - Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome, plus a Tuner tab
+- On the Scales and Chords tabs, a slim bar pinned under the tabs shows the current scale or chord (name, notes, chord position) with a play button and a back-to-top button whenever the title has scrolled out of view
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
 - For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from
   - Preset tunings per string count, including drop tunings for 7-string (Drop A, Drop G♯, Drop G) and 8-string (Drop E, Drop E♭, Drop D) guitars
