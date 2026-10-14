@@ -7,7 +7,7 @@
 - Works both in desktop browsers and mobile
   - On narrow screens the fretboard scrolls sideways by default; a Layout toggle (phones only) switches it to a vertical fretboard that scrolls down the page
 - Link to github repository at the top right corner
-- Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome, plus a Tuner tab
+- Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome, plus Trainer (between Circle of Fifths and Metronome) and Tuner tabs
 - On the Scales and Chords tabs, a slim bar pinned under the tabs shows the current scale or chord (name, notes, chord position) with a play button and a back-to-top button whenever the title has scrolled out of view
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
 - For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from
@@ -49,6 +49,15 @@
   - The seven diatonic chords are highlighted on the circle with Roman numerals relative to the tonic
   - Shows the scale's notes, diatonic triads and seventh chords (tap to hear), key signature, relative keys and the mode's character
   - Clicking a segment of the circle selects that key; "Show on fretboard" opens the scale in the Scales tab
+##### Trainer
+- A fretboard trainer game using the shared fretboard (same tunings, strings, frets and display settings as the other tabs)
+- A random note is highlighted on the fretboard (with its string and fret shown) and the user picks its name from 12 buttons below the fretboard (sharp/flat names shown together)
+- The quizzed frets can be limited to a section of the neck: presets (Open–4, 5–9, 7–12, 12–17, All frets) or any custom from/to fret range
+- Tracks questions asked, correct answers, accuracy and the current/best streak; Reset score button
+- Immediate feedback: correct answers flash green and move on; a wrong answer marks the pick red, shows the right note on the fretboard and button, then moves on
+- Keyboard: letter keys A–G answer naturals, Shift+letter answers the sharp
+- On this tab the fretboard settings are in a collapsible section so the game fits on a phone screen
+
 ##### Metronome
 - A full featured metronome, allowing the user to adjust tempo, tap tempo, accents (meter, beats, division), and a trainer mode which allows a user configurable increase in tempo from a start to end tempo at steps, and also a gradually accelerating mode
   - Tempo 20–300 BPM via slider, ±1/±5 buttons (hold to repeat), number entry, tap tempo, or keyboard (Space, ↑/↓, T)

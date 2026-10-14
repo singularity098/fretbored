@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});
-  const TABS = ['scales', 'chords', 'circle', 'metronome', 'tuner'];
+  const TABS = ['scales', 'chords', 'circle', 'trainer', 'metronome', 'tuner'];
   const inited = {};
 
   function applyTheme() {
@@ -16,7 +16,7 @@
     if (inited[tab]) return;
     inited[tab] = true;
     const panel = document.getElementById(`panel-${tab}`);
-    ({ scales: FS.initScales, chords: FS.initChords, circle: FS.initCircle, metronome: FS.initMetronome, tuner: FS.initTuner })[tab](panel);
+    ({ scales: FS.initScales, chords: FS.initChords, circle: FS.initCircle, trainer: FS.initTrainer, metronome: FS.initMetronome, tuner: FS.initTuner })[tab](panel);
   }
 
   FS.showTab = function (tab) {

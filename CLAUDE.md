@@ -1,6 +1,6 @@
 # Fretbored — notes for Claude
 
-Guitar/bass practice web app: Scales, Chords, Circle of Fifths, Metronome, Tuner.
+Guitar/bass practice web app: Scales, Chords, Circle of Fifths, Trainer, Metronome, Tuner (tab order).
 Live at https://singularity098.github.io/fretbored/ (GitHub Pages, served from `main`).
 `Requirements.md` is the owner's feature spec; `README.md` is the public overview.
 
@@ -35,10 +35,10 @@ Script order in `index.html` matters:
 | `js/tunings.js` | `FS.TUNINGS` presets (MIDI notes, lowest string first; `flats` flag for label spelling), string/fret options |
 | `js/store.js` | `FS.settings` (persisted in localStorage key `fretbored:v1`), `FS.save()`, event bus `FS.on/emit`, tuning helpers, `FS.toast`, DOM helper `FS.h(tag, attrs, ...children)` |
 | `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote`, `prepare`), click samples (`loadSamples`, `playSample`, `playBuffer`) |
-| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords), wood + dot themes, horizontal/vertical layout, tap / long-press / right-click handling |
+| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Trainer), wood + dot themes, horizontal/vertical layout, tap / long-press / right-click handling |
 | `js/fbcontrols.js` | Shared fretboard settings bar + custom tuning editor dialog |
 | `js/nowbar.js` | Pinned "now viewing" bar shown when a tab's title scrolls away |
-| `js/scales.js`, `chords.js`, `circle.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab |
+| `js/scales.js`, `chords.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
 | `js/pitch.js` | `FS.pitch` — McLeod pitch detector with FFT autocorrelation (pure, unit-tested) |
 | `js/app.js` | Tabs (`FS.showTab`), theme, startup. Tabs are initialised lazily on first view |
 | `css/style.css` | All styles; colours are CSS variables on `:root` / `[data-theme='light']` |

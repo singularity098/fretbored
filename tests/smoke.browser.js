@@ -107,6 +107,28 @@ const check = (label, actual, expected) => {
     check(`${P} circle: C Dorian`, await page.textContent('#panel-circle .hero-title'), 'C Dorian');
     await shot('circle');
 
+    // Trainer: answer one right and one wrong; questions stay inside the fret range.
+    await page.click('#tab-trainer');
+    await page.waitForTimeout(250);
+    const askedPc = () => page.evaluate(() => +document.querySelector('#panel-trainer .note').dataset.midi % 12);
+    await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);
+    check(`${P} trainer: right answer`, await page.textContent('#panel-trainer .tr-prompt'), /^✓ Correct/);
+    await page.waitForTimeout(900);
+    await page.click(`#panel-trainer .tr-answer[data-pc="${((await askedPc()) + 1) % 12}"]`);
+    check(`${P} trainer: wrong answer`, await page.textContent('#panel-trainer .tr-prompt'), /^✗ It’s/);
+    const stats = await page.$$eval('#panel-trainer .tr-stat-val', (els) => els.map((e) => e.textContent).join(' '));
+    check(`${P} trainer: score (asked correct accuracy streak)`, stats, /^2 1 50% 0 \(best 1\)$/);
+    await page.click('#panel-trainer .pill:has-text("5 – 9")');
+    const frets = [];
+    for (let i = 0; i < 12; i++) {
+      const m = (await page.textContent('#panel-trainer .tr-prompt')).match(/fret (\d+)/);
+      frets.push(m ? +m[1] : 0);
+      await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);
+      await page.waitForTimeout(800);
+    }
+    check(`${P} trainer: 12 questions all within frets 5–9`, String(frets.every((f) => f >= 5 && f <= 9)), 'true');
+    await shot('trainer');
+
     // Metronome: one mixed buffer per beat; sixteenths at 120 BPM.
     await page.click('#tab-metronome');
     await page.waitForTimeout(250);
