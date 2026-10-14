@@ -5,7 +5,7 @@
   - Works when `index.html` is opened directly from disk (offline); the metronome sounds are embedded in the page
   - Hosted on GitHub Pages
 - Works both in desktop browsers and mobile
-  - On narrow screens the fretboard scrolls sideways
+  - On narrow screens the fretboard scrolls sideways by default; a Layout toggle (phones only) switches it to a vertical fretboard that scrolls down the page
 - Link to github repository at the top right corner
 - Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
@@ -15,6 +15,7 @@
   - Dot labels toggle between note names and interval degrees (1, ♭3, 5 …)
   - Note names are spelled correctly for the key (sharps vs flats chosen automatically, e.g. B♭ in F major, F♯ in G major)
   - Left-handed mode mirrors the fretboard
+  - Layout (phones): Sideways or Vertical — vertical shows the nut at the top and the low string on the left, like a chord chart
   - Fretboard wood: Ebony (default), Rosewood or Maple
   - Dot color themes: Aurora, Amber, Neon, Forest, Ivory, Spectrum (one color per interval)
 ##### Guitar Scales Tab

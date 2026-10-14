@@ -414,6 +414,8 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
   -webkit-touch-callout: none;
 }
 .fretboard { display: block; }
+.fretboard-scroll.vertical { overflow-x: hidden; display: flex; justify-content: center; }
+.mobile-only { display: none !important; }
 .fretboard.wood-ebony { --board-1: #121010; --board-2: #1f1b19; --fret: #c9ccd3; --inlay: rgba(235, 230, 220, 0.6); --nut: #efe8da; }
 .fretboard.wood-rosewood { --board-1: #2a1d17; --board-2: #3d2a20; --fret: #c9ccd3; --inlay: rgba(240, 232, 220, 0.55); --nut: #efe8da; }
 .fretboard.wood-maple { --board-1: #dcb47c; --board-2: #ecca95; --fret: #8f9298; --inlay: rgba(25, 20, 18, 0.8); --nut: #2b2522; }
@@ -612,6 +614,7 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
   .tabs { justify-self: stretch; justify-content: flex-start; }
   .tabs button { padding: 7px 12px; flex: 1 0 auto; }
   .tabs .long { display: none; }
+  .mobile-only { display: flex !important; }
   main { padding: 14px 16px 4px; }
   .card { padding: 14px; border-radius: 14px; }
   .control-row { grid-template-columns: 1fr; gap: 6px; }

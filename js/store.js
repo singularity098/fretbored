@@ -14,6 +14,7 @@
       labels: 'notes',
       dots: 'aurora',
       wood: 'ebony',
+      orientation: 'horizontal',
       lefty: false,
       customTunings: [],
     },

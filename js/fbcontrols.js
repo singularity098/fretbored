@@ -42,6 +42,11 @@
       labelSeg.append(h('button', { dataset: { v }, onclick: () => { fb().labels = v; changed(); } }, label));
     }
 
+    const layoutSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Fretboard layout' });
+    for (const [v, label] of [['horizontal', 'Sideways'], ['vertical', 'Vertical']]) {
+      layoutSeg.append(h('button', { dataset: { v }, onclick: () => { fb().orientation = v; changed(); } }, label));
+    }
+
     const woodSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Fretboard wood' });
     for (const [v, label] of FS.WOODS) {
       woodSeg.append(h('button', { dataset: { v }, onclick: () => { fb().wood = v; changed(); } }, label));
@@ -78,6 +83,7 @@
       field('Tuning', h('div', { class: 'inline' }, tuningSel, editBtn)),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Frets'), fretSeg),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Labels'), labelSeg),
+      h('div', { class: 'field mobile-only' }, h('span', { class: 'field-label' }, 'Layout'), layoutSeg),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Wood'), woodSeg),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Dots'), swatches),
       h('label', { class: 'field switch-field' }, h('span', { class: 'field-label' }, 'Left-handed'), h('span', { class: 'switch' }, lefty, h('span', { class: 'slider' })))
@@ -102,6 +108,7 @@
       tuningSel.value = cur.id;
       fretSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', +b.dataset.v === s.frets));
       labelSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.labels));
+      layoutSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.orientation));
       woodSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.wood));
       swatches.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.dots));
       lefty.checked = !!s.lefty;

@@ -55,35 +55,71 @@
       this.render();
     }
 
+    // Vertical layout is a phone option; wider screens always use the horizontal board.
+    isVertical() {
+      return FS.settings.fretboard.orientation === 'vertical' && FS.isNarrow();
+    }
+
+    /*
+     * Layout works in two axes: u runs along the neck (nut → body) and v runs across the
+     * strings. pt()/rect() map them to SVG x/y for the current orientation and handedness.
+     */
     layout() {
       const fb = FS.settings.fretboard;
       const tuning = FS.currentTuning().notes;
       const n = tuning.length;
       const frets = fb.frets;
-      const gap = n <= 5 ? 38 : n === 6 ? 34 : 31;
-      const padTop = 22;
-      const padBottom = gap / 2 + 26;
-      const openW = 50;
+      const vertical = this.isVertical();
+      const lefty = fb.lefty;
+      const hostW = this.host.clientWidth;
+
+      let gap, vPadLo, vPadHi;
+      if (vertical) {
+        // Fill the phone's width with the strings; fret numbers sit on the left.
+        vPadLo = 30;
+        vPadHi = 8;
+        gap = Math.max(34, Math.min(58, (hostW - vPadLo - vPadHi - 2) / n));
+      } else {
+        gap = n <= 5 ? 38 : n === 6 ? 34 : 31;
+        vPadLo = 4;
+        vPadHi = 26;
+      }
+      const across = vPadLo + vPadHi + n * gap;
+
+      const openW = vertical ? 46 : 50;
       const tail = 18;
-      const height = padTop + padBottom + (n - 1) * gap;
       const widths = [];
       let total = 0;
       for (let i = 1; i <= frets; i++) {
         widths.push(Math.pow(2, -i / 24));
         total += widths[widths.length - 1];
       }
-      const minLast = 36;
+      const minLast = vertical ? 40 : 36;
       const needed = (minLast * total) / widths[widths.length - 1];
-      const avail = Math.max(this.host.clientWidth - openW - tail - 2, needed);
+      const avail = vertical ? needed : Math.max(hostW - openW - tail - 2, needed);
       const k = avail / total;
       const fretX = [openW];
       for (let i = 0; i < frets; i++) fretX.push(fretX[i] + widths[i] * k);
-      const width = fretX[frets] + tail;
-      const lefty = fb.lefty;
-      const X = (x) => (lefty ? width - x : x);
-      const cellX = (f) => (f === 0 ? openW / 2 - 4 : (fretX[f - 1] + fretX[f]) / 2);
-      const stringY = (s) => padTop + (n - 1 - s) * gap;
-      return { tuning, n, frets, gap, padTop, height, width, fretX, openW, X, cellX, stringY, lefty };
+      const along = fretX[frets] + tail;
+
+      // Across position of each string. Horizontal: high string on top. Vertical: low string
+      // on the left, like a chord chart. Left-handed mirrors the neck (horizontal) or the
+      // string order (vertical).
+      const stringV = (s) => {
+        const idx = vertical ? (lefty ? n - 1 - s : s) : n - 1 - s;
+        return vPadLo + gap / 2 + idx * gap;
+      };
+      const U = (u) => (!vertical && lefty ? along - u : u);
+      const pt = (u, v) => (vertical ? [v, U(u)] : [U(u), v]);
+      const rect = (u1, u2, v1, v2) => {
+        const [xa, ya] = pt(u1, v1);
+        const [xb, yb] = pt(u2, v2);
+        return `x="${Math.min(xa, xb)}" y="${Math.min(ya, yb)}" width="${Math.abs(xb - xa)}" height="${Math.abs(yb - ya)}"`;
+      };
+      const cellU = (f) => (f === 0 ? openW / 2 - 4 : (fretX[f - 1] + fretX[f]) / 2);
+      const width = vertical ? across : along;
+      const height = vertical ? along : across;
+      return { tuning, n, frets, gap, width, height, fretX, openW, stringV, pt, rect, cellU, lefty, vertical, vPadLo };
     }
 
     render() {
@@ -92,75 +128,83 @@
       this.L = L;
       const fb = FS.settings.fretboard;
       const theme = FS.DOT_THEMES[fb.dots] || FS.DOT_THEMES.aurora;
-      const { n, frets, height, width, fretX, X, cellX, stringY, gap, openW } = L;
-      const top = stringY(n - 1);
-      const bottom = stringY(0);
+      const { n, frets, height, width, fretX, pt, rect, cellU, stringV, gap, openW, vertical } = L;
+      const vLo = L.vPadLo; // board edges across the strings
+      const vHi = vLo + n * gap;
+      const xy = (u, v) => {
+        const [x, y] = pt(u, v);
+        return { x, y };
+      };
       const parts = [];
+      const g2 = vertical ? 'x1="0" y1="0" x2="1" y2="0"' : 'x1="0" y1="0" x2="0" y2="1"';
 
+      this.host.classList.toggle('vertical', vertical);
       parts.push(`<svg xmlns="${NS}" class="fretboard wood-${FS.WOODS.some((w) => w[0] === fb.wood) ? fb.wood : 'ebony'}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Fretboard">`);
       parts.push(`<defs>
-        <linearGradient id="${this.uid}wood" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="${this.uid}wood" ${g2}>
           <stop offset="0" style="stop-color:var(--board-1)"/><stop offset="0.5" style="stop-color:var(--board-2)"/><stop offset="1" style="stop-color:var(--board-1)"/>
         </linearGradient>
-        <linearGradient id="${this.uid}string" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="${this.uid}string" ${g2}>
           <stop offset="0" stop-color="#f4f1ea"/><stop offset="1" stop-color="#8d8a84"/>
         </linearGradient>
       </defs>`);
 
       // Board
-      const bx1 = Math.min(X(openW), X(fretX[frets]));
-      const bx2 = Math.max(X(openW), X(fretX[frets]));
-      parts.push(`<rect class="board" x="${bx1}" y="${top - gap / 2}" width="${bx2 - bx1}" height="${bottom - top + gap}" rx="4" fill="url(#${this.uid}wood)"/>`);
+      parts.push(`<rect class="board" ${rect(openW, fretX[frets], vLo, vHi)} rx="4" fill="url(#${this.uid}wood)"/>`);
 
       // Inlays
-      const midY = (top + bottom) / 2;
+      const mid = (vLo + vHi) / 2;
+      const inlay = (f, v) => {
+        const c = xy(cellU(f), v);
+        return `<circle class="inlay" cx="${c.x}" cy="${c.y}" r="6"/>`;
+      };
       for (let f = 1; f <= frets; f++) {
-        const cx = X(cellX(f));
-        if (INLAYS.includes(f)) parts.push(`<circle class="inlay" cx="${cx}" cy="${midY}" r="6"/>`);
+        if (INLAYS.includes(f)) parts.push(inlay(f, mid));
         if (DOUBLE_INLAYS.includes(f)) {
-          const off = (bottom - top) / 4;
-          parts.push(`<circle class="inlay" cx="${cx}" cy="${midY - off}" r="6"/><circle class="inlay" cx="${cx}" cy="${midY + off}" r="6"/>`);
+          const off = (vHi - vLo) / 4;
+          parts.push(inlay(f, mid - off), inlay(f, mid + off));
         }
       }
 
       // Frets + nut
       for (let f = 1; f <= frets; f++) {
-        const x = X(fretX[f]);
-        parts.push(`<line class="fret" x1="${x}" y1="${top - gap / 2}" x2="${x}" y2="${bottom + gap / 2}"/>`);
+        const a = xy(fretX[f], vLo);
+        const b = xy(fretX[f], vHi);
+        parts.push(`<line class="fret" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"/>`);
       }
-      parts.push(`<rect class="nut" x="${X(openW) - (L.lefty ? 0 : 5)}" y="${top - gap / 2}" width="5" height="${bottom - top + gap}" rx="1.5"/>`);
+      const nutU = !vertical && L.lefty ? openW : openW - 5;
+      parts.push(`<rect class="nut" ${rect(nutU, nutU + 5, vLo, vHi)} rx="1.5"/>`);
 
       // Strings (thicker for lower strings)
       for (let s = 0; s < n; s++) {
-        const y = stringY(s);
+        const v = stringV(s);
         const thick = 1 + ((n - 1 - s) / Math.max(1, n - 1)) * (n <= 5 ? 2.6 : 2);
-        const x1 = Math.min(X(openW), X(fretX[frets] + 10));
-        const x2 = Math.max(X(openW), X(fretX[frets] + 10));
-        parts.push(`<rect class="string" x="${x1}" y="${y - thick / 2}" width="${x2 - x1}" height="${thick}" fill="url(#${this.uid}string)"/>`);
+        parts.push(`<rect class="string" ${rect(openW, fretX[frets] + 10, v - thick / 2, v + thick / 2)} fill="url(#${this.uid}string)"/>`);
       }
 
-      // Fret numbers
+      // Fret numbers: below the board (horizontal) or to its left (vertical)
       for (let f = 1; f <= frets; f++) {
         const cls = INLAYS.includes(f) || DOUBLE_INLAYS.includes(f) ? 'fretnum marked' : 'fretnum';
-        parts.push(`<text class="${cls}" x="${X(cellX(f))}" y="${bottom + gap / 2 + 16}">${f}</text>`);
+        const c = xy(cellU(f), vertical ? vLo - 14 : vHi + 16);
+        parts.push(`<text class="${cls}" x="${c.x}" y="${c.y}">${f}</text>`);
       }
 
       // Clickable cells, each with a hover ghost dot.
-      const r = Math.min(gap * 0.42, 14);
+      const r = Math.min(gap * 0.42, vertical ? 16 : 14);
       for (let s = 0; s < n; s++) {
-        const y = stringY(s);
+        const v = stringV(s);
         for (let f = 0; f <= frets; f++) {
-          const xa = f === 0 ? 0 : fretX[f - 1];
-          const xb = f === 0 ? openW - 5 : fretX[f];
-          const x1 = Math.min(X(xa), X(xb));
-          const w = Math.abs(X(xb) - X(xa));
-          parts.push(`<g class="cell" data-s="${s}" data-f="${f}"><rect x="${x1}" y="${y - gap / 2}" width="${w}" height="${gap}"/><circle class="ghost" cx="${X(cellX(f))}" cy="${y}" r="${r}"/></g>`);
+          const ua = f === 0 ? 0 : fretX[f - 1];
+          const ub = f === 0 ? openW - 5 : fretX[f];
+          const c = xy(cellU(f), v);
+          parts.push(`<g class="cell" data-s="${s}" data-f="${f}"><rect ${rect(ua, ub, v - gap / 2, v + gap / 2)}/><circle class="ghost" cx="${c.x}" cy="${c.y}" r="${r}"/></g>`);
         }
       }
 
       // Muted string markers
       for (const s of this.model.muted || []) {
-        parts.push(`<text class="mute" x="${X(cellX(0))}" y="${stringY(s)}">×</text>`);
+        const c = xy(cellU(0), stringV(s));
+        parts.push(`<text class="mute" x="${c.x}" y="${c.y}">×</text>`);
       }
 
       // Notes
@@ -169,37 +213,37 @@
         const key = `${note.s}:${note.f}:${note.kind}`;
         keys.add(key);
         const enter = this.prevKeys.has(key) ? '' : ' enter';
-        const x = X(cellX(note.f));
-        const y = stringY(note.s);
+        const c = xy(cellU(note.f), stringV(note.s));
         let fill;
         if (note.kind === 'root') fill = theme.root;
         else if (theme.spectrum && note.iv !== undefined) fill = spectrumColor(note.iv);
         else fill = theme.note;
         const label = FS.theory.pretty(note.label || '');
-        const fs = label.length >= 4 ? 9 : label.length === 3 ? 10.5 : 12.5;
+        const fs = (label.length >= 4 ? 9 : label.length === 3 ? 10.5 : 12.5) * (r / 14);
         const cls = `note ${note.kind}${enter}`;
         const midi = L.tuning[note.s] + note.f;
-        parts.push(`<g class="${cls}" data-midi="${midi}" transform="translate(${x} ${y})" style="--dot:${fill}">`);
+        parts.push(`<g class="${cls}" data-midi="${midi}" transform="translate(${c.x} ${c.y})" style="--dot:${fill}">`);
         if (note.kind === 'root') parts.push(`<circle class="halo" r="${r + 4}"/>`);
         parts.push(`<circle class="dot" r="${note.kind === 'faint' ? r * 0.82 : r}"/>`);
-        if (label) parts.push(`<text style="font-size:${fs}px">${label}</text>`);
+        if (label) parts.push(`<text style="font-size:${fs.toFixed(1)}px">${label}</text>`);
         parts.push('</g>');
       }
       this.prevKeys = keys;
 
       parts.push('</svg>');
       this.host.innerHTML = parts.join('');
-      if (L.lefty !== this.lastLefty) {
+      const mode = `${vertical}:${L.lefty}`;
+      if (mode !== this.lastMode) {
         // Start with the nut in view.
-        this.lastLefty = L.lefty;
-        this.host.scrollLeft = L.lefty ? this.host.scrollWidth : 0;
+        this.lastMode = mode;
+        this.host.scrollLeft = !vertical && L.lefty ? this.host.scrollWidth : 0;
       }
     }
 
     // Scroll a horizontally overflowing board so a fret is in view.
     scrollToFret(f) {
-      if (!this.L || this.host.scrollWidth <= this.host.clientWidth) return;
-      const x = this.L.X(this.L.cellX(f));
+      if (!this.L || this.L.vertical || this.host.scrollWidth <= this.host.clientWidth) return;
+      const [x] = this.L.pt(this.L.cellU(f), 0);
       this.host.scrollTo({ left: Math.max(0, x - this.host.clientWidth / 2), behavior: 'smooth' });
     }
 
@@ -272,6 +316,13 @@
       });
     }
   }
+
+  // Phones get the option of a vertical fretboard.
+  const narrowQuery = window.matchMedia('(max-width: 760px)');
+  FS.isNarrow = () => narrowQuery.matches;
+  const onNarrowChange = () => FS.emit('fretboard');
+  if (narrowQuery.addEventListener) narrowQuery.addEventListener('change', onNarrowChange);
+  else if (narrowQuery.addListener) narrowQuery.addListener(onNarrowChange);
 
   FS.Fretboard = Fretboard;
 })();
