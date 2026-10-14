@@ -99,6 +99,7 @@ test('voicings on standard guitar', () => {
   assert.strictEqual(fmt(gMaj[0]), '320003');
   const aMin = v(9, 'min');
   assert.strictEqual(fmt(aMin[0]), 'x02210');
+  assert.strictEqual(fmt(v(0, '7')[0]), 'x32310'); // open C7 omits the 5th
   for (const cid of Object.keys(T.CHORD_BY_ID)) {
     for (let r = 0; r < 12; r++) {
       const out = v(r, cid);

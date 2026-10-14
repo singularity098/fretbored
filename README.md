@@ -32,6 +32,8 @@ Live site: **https://singularity098.github.io/fretbored/**
 - No build step. Scripts are plain (non-module) JavaScript so the page works from `file://`.
 - `node tests/theory.test.js` — tests for spelling, scale/chord matching and voicing generation.
 - `node tests/pitch.test.js` — pitch detector accuracy tests.
+- `node tests/smoke.browser.js` — headless-Chromium smoke test of every tab (desktop + phone); needs Playwright.
+- `CLAUDE.md` — architecture, conventions and hard-won browser notes for AI-assisted development.
 - `node tools/embed-sounds.js` — regenerates `js/sounds.js` after changing files in `assets/sounds/`.
 
 | File | Purpose |
