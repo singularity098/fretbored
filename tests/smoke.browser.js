@@ -79,6 +79,16 @@ const check = (label, actual, expected) => {
     await page.waitForTimeout(400);
     const P = `[${name}]`;
 
+    // Layout: tab order, and the fretboard is the first section wherever it appears.
+    check(`${P} tab order`, await page.$$eval('[role="tab"]', (t) => t.map((x) => x.dataset.tab).join(' ')), 'scales chords arpeggios trainer circle metronome tuner');
+    for (const tab of ['scales', 'chords', 'arpeggios', 'trainer']) {
+      await page.click(`#tab-${tab}`);
+      await page.waitForTimeout(150);
+      check(`${P} ${tab}: fretboard is the first section`, String(await page.$eval(`#panel-${tab}`, (p) => p.firstElementChild.classList.contains('board-card'))), 'true');
+    }
+    await page.click('#tab-scales');
+    await page.waitForTimeout(150);
+
     // Fretboard settings: folded by default; opening it on one tab opens it on the others and is remembered.
     const fbOpen = (tab) => page.$eval(`#panel-${tab} .fb-settings`, (d) => d.open);
     check(`${P} fretboard settings folded by default`, String(await fbOpen('scales')), 'false');

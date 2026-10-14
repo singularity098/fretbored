@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});
-  const TABS = ['scales', 'chords', 'arpeggios', 'circle', 'trainer', 'metronome', 'tuner'];
+  const TABS = ['scales', 'chords', 'arpeggios', 'trainer', 'circle', 'metronome', 'tuner'];
   const inited = {};
 
   function applyTheme() {

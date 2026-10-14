@@ -646,6 +646,8 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 .now-bar.show { opacity: 1; transform: none; }
+.now-bar.at-bottom { top: auto; bottom: 0; padding-top: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); transform: translateY(8px); }
+.now-bar.at-bottom.show { transform: none; }
 .now-bar.show .nb-inner { pointer-events: auto; }
 .nb-inner {
   max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 10px;

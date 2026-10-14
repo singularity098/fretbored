@@ -1,6 +1,6 @@
 # Fretbored — notes for Claude
 
-Guitar/bass practice web app: Scales, Chords, Arpeggios, Circle of Fifths, Trainer, Metronome, Tuner (tab order).
+Guitar/bass practice web app: Scales, Chords, Arpeggios, Trainer, Circle of Fifths, Metronome, Tuner (tab order).
 Live at https://singularity098.github.io/fretbored/ (GitHub Pages, served from `main`).
 `Requirements.md` is the owner's feature spec; `README.md` is the public overview.
 
@@ -37,7 +37,7 @@ Script order in `index.html` matters:
 | `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote`, `prepare`), click samples (`loadSamples`, `playSample`, `playBuffer`) |
 | `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Arpeggios/Trainer), wood + dot themes, horizontal/vertical layout, tap / long-press / right-click handling. Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f) }` — `color` overrides the theme (dark label), `isActive` shades other cells |
 | `js/fbcontrols.js` | Shared fretboard settings bar (inside a collapsible `details.fb-settings`, open state in `fretboard.controlsOpen`, synced across tabs via the `fbcontrols:open` event) + custom tuning editor dialog |
-| `js/nowbar.js` | Pinned "now viewing" bar shown when a tab's title scrolls away |
+| `js/nowbar.js` | Pinned "now viewing" bar shown while a tab's title is out of view — at the top when scrolled past it, at the bottom while it is still below the screen |
 | `js/scales.js`, `chords.js`, `arpeggios.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
 | `js/pitch.js` | `FS.pitch` — McLeod pitch detector with FFT autocorrelation (pure, unit-tested) |
 | `js/app.js` | Tabs (`FS.showTab`), theme, startup. Tabs are initialised lazily on first view |
@@ -46,6 +46,9 @@ Script order in `index.html` matters:
 Events: `fretboard` (any fretboard setting or tuning changed → re-render), `tab` (tab switched),
 `scales:set` (Circle → Scales hand-off), `fbcontrols:open` (settings section opened/closed).
 Tests that use fretboard settings must open `.fb-settings` first (it starts folded).
+
+Layout rule (owner): wherever a fretboard appears, its card (`.board-card`) is the first section of
+the tab — each tab does `panel.prepend(panel.querySelector('.board-card'))`.
 
 Settings: add new keys to `DEFAULTS` in `store.js`. `merge()` drops unknown keys and replaces
 values whose type doesn't match the default (a default of `null` accepts anything). A nested

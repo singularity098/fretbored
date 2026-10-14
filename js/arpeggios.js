@@ -73,6 +73,8 @@
       )
     );
 
+    // The fretboard is always the first section on a tab (owner's layout rule).
+    panel.prepend(panel.querySelector('.board-card'));
     FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, { onToggle: tapNote, onRoot: tapNote });
     const nowBar = FS.createNowBar(panel, panel.querySelector('.arp-hero'), () => (playing ? stopPlaying() : play()));

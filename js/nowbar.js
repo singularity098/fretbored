@@ -15,8 +15,8 @@
   }
 
   /**
-   * panel: the tab panel; watchEl: the element whose disappearance (scrolled above the top bar)
-   * reveals the bar; onAction: handler for the bar's play button.
+   * panel: the tab panel; watchEl: the title element — the bar shows while it is out of view (scrolled above the top bar, or still below the screen);
+   * onAction: handler for the bar's play button.
    * Returns { set({ accent, rest, notes, action }) }.
    */
   FS.createNowBar = function (panel, watchEl, onAction) {
@@ -25,11 +25,15 @@
     const rest = h('span');
     const notes = h('div', { class: 'nb-notes' });
     const action = h('button', { class: 'btn primary small nb-action', onclick: onAction });
+    // Jumps to the title and its controls, wherever they are (↑ above, ↓ below).
     const up = h('button', {
       class: 'icon-btn nb-up',
-      title: 'Back to the controls',
-      'aria-label': 'Scroll back to the controls',
-      onclick: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
+      title: 'Go to the controls',
+      'aria-label': 'Scroll to the controls',
+      onclick: () => {
+        const topbar = document.querySelector('.topbar').offsetHeight;
+        window.scrollTo({ top: Math.max(0, window.scrollY + watchEl.getBoundingClientRect().top - topbar - 12), behavior: 'smooth' });
+      },
     }, '↑');
     const bar = h('div', { class: 'now-bar', 'aria-hidden': 'true' },
       h('div', { class: 'nb-inner' }, h('div', { class: 'nb-text' }, h('div', { class: 'nb-title' }, accent, rest), notes), action, up)
@@ -40,7 +44,13 @@
     function check() {
       queued = false;
       const top = document.querySelector('.topbar').getBoundingClientRect().bottom;
-      const show = !panel.hidden && watchEl.getBoundingClientRect().bottom < top;
+      const r = watchEl.getBoundingClientRect();
+      // The title can be out of view above (scrolled past) or below (the fretboard comes first).
+      const below = r.top > window.innerHeight - 40;
+      const show = !panel.hidden && (r.bottom < top || below);
+      up.textContent = below ? '↓' : '↑';
+      // Title below the screen (fretboard first): sit at the bottom so the top of the tab stays usable.
+      if (show) bar.classList.toggle('at-bottom', below);
       bar.classList.toggle('show', show);
       bar.setAttribute('aria-hidden', String(!show));
     }
@@ -53,6 +63,7 @@
     window.addEventListener('scroll', queue, { passive: true });
     window.addEventListener('resize', queue);
     FS.on('tab', queue);
+    new ResizeObserver(queue).observe(panel); // layout shifts (e.g. the fretboard rendering)
 
     return {
       set(o) {

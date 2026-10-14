@@ -200,6 +200,8 @@
       )
     );
 
+    // The fretboard is always the first section on a tab (owner's layout rule).
+    panel.prepend(panel.querySelector('.board-card'));
     FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, { onToggle: tapCell, onRoot: tapCell });
 
