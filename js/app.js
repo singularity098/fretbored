@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});
-  const TABS = ['scales', 'chords', 'circle', 'metronome'];
+  const TABS = ['scales', 'chords', 'circle', 'metronome', 'tuner'];
   const inited = {};
 
   function applyTheme() {
@@ -16,7 +16,7 @@
     if (inited[tab]) return;
     inited[tab] = true;
     const panel = document.getElementById(`panel-${tab}`);
-    ({ scales: FS.initScales, chords: FS.initChords, circle: FS.initCircle, metronome: FS.initMetronome })[tab](panel);
+    ({ scales: FS.initScales, chords: FS.initChords, circle: FS.initCircle, metronome: FS.initMetronome, tuner: FS.initTuner })[tab](panel);
   }
 
   FS.showTab = function (tab) {
@@ -33,6 +33,7 @@
       if (on && btn.scrollIntoView) btn.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     }
     ensureInit(tab);
+    FS.emit('tab', tab);
     FS.emit('fretboard');
     if (location.hash !== `#${tab}`) history.replaceState(null, '', `#${tab}`);
   };

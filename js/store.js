@@ -21,6 +21,7 @@
     scales: { root: 0, scaleId: 'major', pcs: null, category: 'common', lastScale: null },
     chords: { root: 0, chordId: 'maj', position: 0, advanced: false, showAll: false, custom: null },
     circle: { tonic: 0, mode: 0 },
+    tuner: { mode: 'needle', target: 'instrument', a4: 440, lock: -1, sensitivity: 0.5 },
     metronome: {
       bpm: 100,
       beats: 4,

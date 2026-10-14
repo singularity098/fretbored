@@ -7,7 +7,7 @@
 - Works both in desktop browsers and mobile
   - On narrow screens the fretboard scrolls sideways by default; a Layout toggle (phones only) switches it to a vertical fretboard that scrolls down the page
 - Link to github repository at the top right corner
-- Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome
+- Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome, plus a Tuner tab
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
 - For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from
   - Preset tunings per string count, including drop tunings for 7-string (Drop A, Drop G♯, Drop G) and 8-string (Drop E, Drop E♭, Drop D) guitars
@@ -60,3 +60,12 @@
   - Keeps the screen awake while running on supporting mobile browsers
 - The timing must be perfectly accurate
   - Every click is scheduled on the Web Audio clock (sample-accurate), ahead of time, so browser timer jitter never affects the audio
+##### Tuner
+- A full featured tuner using the device microphone, with traditional and strobe tuning modes
+  - Traditional: needle gauge (±50 cents) with note name, octave, cents offset, frequency and "tune up / tune down" guidance; green when within ±2 cents
+  - Strobe: three rows of moving bands (fundamental and two octaves, like a Peterson strobe) whose speed shows how far out of tune you are; the bands stand still when in tune
+  - Instrument mode tunes to the strings of the current tuning (shared with the fretboard), auto-detecting the string or locked to one string; Chromatic mode tunes to the nearest note
+  - Adjustable reference pitch (A4 = 415–466 Hz, default 440) and sensitivity (noise gate)
+  - Reference tone button plays the target note for tuning by ear
+  - Accurate to a fraction of a cent from a 5-string bass's low B (31 Hz) up to the 24th fret (McLeod pitch detection with an FFT-based autocorrelation)
+  - The microphone is only opened while the tuner is running and is released when leaving the tab; audio is analysed on the device and never leaves it

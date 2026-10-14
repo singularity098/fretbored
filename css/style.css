@@ -566,6 +566,60 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 .progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s; }
 .trainer-status { margin-top: 8px; }
 
+/* ---------------------------------------------------------------- Tuner */
+
+.tuner-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.tn-main {
+  --tn-good: #3dd6c3; --tn-band: #ff7a59; --tn-idle: #4a5468; --tn-color: var(--text-3);
+  display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center;
+}
+.tn-main[data-state='tuned'] { --tn-color: var(--tn-good); }
+.tn-main[data-state='close'] { --tn-color: #f4c95d; }
+.tn-main[data-state='off'] { --tn-color: var(--tn-band); }
+.tn-head { display: flex; flex-direction: column; align-items: center; min-height: 128px; justify-content: center; }
+.tn-note { font-size: clamp(72px, 16vw, 112px); line-height: 1; font-weight: 800; letter-spacing: -0.03em; color: var(--tn-color); transition: color 0.2s; }
+.tn-main[data-state='idle'] .tn-note { color: var(--text-3); }
+.tn-note sub { font-size: 0.32em; font-weight: 700; vertical-align: baseline; margin-left: 2px; color: var(--text-3); }
+.tn-sub { color: var(--text-2); font-weight: 600; font-size: 14px; margin-top: 4px; }
+.tn-view { width: 100%; display: flex; justify-content: center; }
+.tn-gauge { width: 100%; max-width: 440px; height: auto; display: block; }
+.tn-arc { fill: none; stroke: var(--surface-3); stroke-width: 10; stroke-linecap: round; }
+.tn-zone { fill: none; stroke: var(--tn-good); stroke-width: 10; stroke-linecap: round; opacity: 0.85; }
+.tn-tick { stroke: var(--text-3); stroke-width: 1.5; }
+.tn-tick.major { stroke: var(--text-2); stroke-width: 2.5; }
+.tn-label { fill: var(--text-3); font-size: 12px; font-weight: 700; text-anchor: middle; dominant-baseline: central; }
+.tn-flat, .tn-sharp { fill: var(--text-3); font-size: 22px; text-anchor: middle; }
+.tn-needle { transform-box: view-box; transform-origin: 160px 166px; transition: transform 0.09s linear; }
+.tn-needle line { stroke: var(--tn-color); stroke-width: 4; stroke-linecap: round; transition: stroke 0.2s; }
+.tn-needle circle { fill: var(--tn-color); transition: fill 0.2s; }
+.tn-strobe {
+  width: 100%; max-width: 520px; height: 168px; display: block; border-radius: 14px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  box-shadow: inset 0 0 0 2px var(--tn-color);
+}
+.tn-readout { display: grid; grid-template-columns: 1fr auto 1fr; align-items: baseline; gap: 12px; width: 100%; max-width: 440px; font-variant-numeric: tabular-nums; }
+.tn-cents { text-align: left; font-size: 20px; font-weight: 750; color: var(--tn-color); }
+.tn-freq { text-align: right; color: var(--text-2); font-size: 15px; }
+.tn-status { font-weight: 700; color: var(--tn-color); font-size: 16px; }
+.tn-main[data-state='idle'] .tn-status { color: var(--text-3); font-weight: 600; }
+.tn-strings { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.tn-strings .pill { min-width: 52px; padding: 8px 12px; }
+.tn-string sub { font-size: 0.7em; color: inherit; opacity: 0.7; margin-left: 1px; }
+.tn-strings .pill.auto-on { border-color: var(--accent-2); color: var(--text); }
+.tn-strings .pill.detected { border-color: var(--tn-color); color: var(--text); box-shadow: inset 0 0 0 1px var(--tn-color); }
+.tn-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.tn-start { min-width: 170px; min-height: 48px; font-size: 16px; }
+.tn-start.running { background: linear-gradient(135deg, #ff5c7a, #ff7a59); }
+.tn-msg:empty { display: none; }
+.center { text-align: center; }
+.stepper-val.wide { min-width: 64px; font-size: 16px; }
+.tn-side .seg { margin-bottom: 4px; }
+.tn-tuning { margin-top: 12px; }
+
+@media (max-width: 1000px) {
+  .tuner-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ---------------------------------------------------------------- Dialog, toast, footer */
 
 dialog {
