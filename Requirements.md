@@ -18,7 +18,7 @@
   - Left-handed mode mirrors the fretboard
   - Layout (phones): Sideways or Vertical — vertical shows the nut at the top and the low string on the left, like a chord chart
   - Fretboard wood: Ebony (default), Rosewood or Maple
-  - Dot color themes: Aurora, Amber, Neon, Forest, Ivory, Spectrum (one color per interval)
+  - Dot color themes: Circle (default — the circle-of-fifths colours: coral root, violet notes, white labels), Aurora, Amber, Neon, Forest, Ivory, Spectrum (one color per interval)
 ##### Guitar Scales Tab
 - User may select any key desired, and they display in the fretboard with root note highlighted
 - The user may select scales from 3 categories: Common, Rare, Exotic
@@ -51,12 +51,17 @@
   - Clicking a segment of the circle selects that key; "Show on fretboard" opens the scale in the Scales tab
 ##### Trainer
 - A fretboard trainer game using the shared fretboard (same tunings, strings, frets and display settings as the other tabs)
-- A random note is highlighted on the fretboard (with its string and fret shown) and the user picks its name from 12 buttons below the fretboard (sharp/flat names shown together)
-- The quizzed frets can be limited to a section of the neck: presets (Open–4, 5–9, 7–12, 12–17, All frets) or any custom from/to fret range
+- Two games:
+  - Name the note: a random note is highlighted on the fretboard (with its string and fret shown) and the user picks its name from 12 buttons below the fretboard (sharp/flat names shown together)
+  - Find the note: the app names a note and the user taps every place it occurs in the practice area; a miss shows the tapped note in red; three misses or "Show answer" reveals them all; a round counts as correct only with no misses
+- The practice area can be limited to a section of the neck — presets (Open–4, 5–9, 7–12, 12–17, All frets) or any custom from/to fret range — and to chosen strings ("Quiz strings")
+- Options: Natural notes only (hides the sharp/flat buttons), Dim outside range (shades the frets and strings not being quizzed), Focus on weak spots (asks more often the notes and positions answered wrong before), Play sound (plays the note with each question, with a Replay button)
 - Tracks questions asked, correct answers, accuracy and the current/best streak; Reset score button
+- 60-second challenge: count correct answers in a minute; the best score per game is saved
+- Progress saved on the device: questions and accuracy for each of the last 7 days (bar chart), accuracy by note and by string with weak ones flagged; Reset progress button
 - Immediate feedback: correct answers flash green and move on; a wrong answer marks the pick red, shows the right note on the fretboard and button, then moves on
 - Keyboard: letter keys A–G answer naturals, Shift+letter answers the sharp
-- On this tab the fretboard settings are in a collapsible section so the game fits on a phone screen
+- On this tab the shared fretboard settings (strings, tuning, frets, wood, dots…) sit in a collapsible "Fretboard settings" section, showing the current tuning, so the game fits on a phone screen
 
 ##### Metronome
 - A full featured metronome, allowing the user to adjust tempo, tap tempo, accents (meter, beats, division), and a trainer mode which allows a user configurable increase in tempo from a start to end tempo at steps, and also a gradually accelerating mode

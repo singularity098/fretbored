@@ -9,7 +9,9 @@
     ['maple', 'Maple'],
   ];
 
+  // text: label colour on the dot (defaults to dark ink).
   FS.DOT_THEMES = {
+    circle: { name: 'Circle', root: '#ff7a59', note: '#7c6cff', text: '#ffffff' }, // the circle-of-fifths colours
     aurora: { name: 'Aurora', root: '#ff7a59', note: '#3dd6c3' },
     amber: { name: 'Amber', root: '#ffb627', note: '#8fa2ff' },
     neon: { name: 'Neon', root: '#ff3d8b', note: '#2de2ff' },
@@ -127,7 +129,7 @@
       const L = this.layout();
       this.L = L;
       const fb = FS.settings.fretboard;
-      const theme = FS.DOT_THEMES[fb.dots] || FS.DOT_THEMES.aurora;
+      const theme = FS.DOT_THEMES[fb.dots] || FS.DOT_THEMES.circle;
       const { n, frets, height, width, fretX, pt, rect, cellU, stringV, gap, openW, vertical } = L;
       const vLo = L.vPadLo; // board edges across the strings
       const vHi = vLo + n * gap;
@@ -201,6 +203,19 @@
         }
       }
 
+      // Optional shading of cells outside an active area (model.isActive(s, f) → bool).
+      if (this.model.isActive) {
+        for (let s = 0; s < n; s++) {
+          const v = stringV(s);
+          for (let f = 0; f <= frets; f++) {
+            if (this.model.isActive(s, f)) continue;
+            const ua = f === 0 ? 0 : fretX[f - 1];
+            const ub = f === 0 ? openW - 5 : fretX[f];
+            parts.push(`<rect class="shade" ${rect(ua, ub, v - gap / 2, v + gap / 2)}/>`);
+          }
+        }
+      }
+
       // Muted string markers
       for (const s of this.model.muted || []) {
         const c = xy(cellU(0), stringV(s));
@@ -215,14 +230,16 @@
         const enter = this.prevKeys.has(key) ? '' : ' enter';
         const c = xy(cellU(note.f), stringV(note.s));
         let fill;
-        if (note.kind === 'root') fill = theme.root;
+        let ink = theme.text || '#0d1017';
+        if (note.color) (fill = note.color), (ink = '#0d1017');
+        else if (note.kind === 'root') fill = theme.root;
         else if (theme.spectrum && note.iv !== undefined) fill = spectrumColor(note.iv);
         else fill = theme.note;
         const label = FS.theory.pretty(note.label || '');
         const fs = (label.length >= 4 ? 9 : label.length === 3 ? 10.5 : 12.5) * (r / 14);
         const cls = `note ${note.kind}${enter}`;
         const midi = L.tuning[note.s] + note.f;
-        parts.push(`<g class="${cls}" data-midi="${midi}" transform="translate(${c.x} ${c.y})" style="--dot:${fill}">`);
+        parts.push(`<g class="${cls}" data-midi="${midi}" transform="translate(${c.x} ${c.y})" style="--dot:${fill};--dot-text:${ink}">`);
         if (note.kind === 'root') parts.push(`<circle class="halo" r="${r + 4}"/>`);
         parts.push(`<circle class="dot" r="${note.kind === 'faint' ? r * 0.82 : r}"/>`);
         if (label) parts.push(`<text style="font-size:${fs.toFixed(1)}px">${label}</text>`);

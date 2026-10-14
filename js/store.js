@@ -12,7 +12,8 @@
       tuning: 'std6',
       frets: 22,
       labels: 'notes',
-      dots: 'aurora',
+      dots: 'circle',
+      themeVersion: 0, // bumped when the default dot theme changes, to migrate saved defaults
       wood: 'ebony',
       orientation: 'horizontal',
       lefty: false,
@@ -21,7 +22,18 @@
     scales: { root: 0, scaleId: 'major', pcs: null, category: 'common', lastScale: null },
     chords: { root: 0, chordId: 'maj', position: 0, advanced: false, showAll: false, custom: null },
     circle: { tonic: 0, mode: 0 },
-    trainer: { from: 0, to: 12 },
+    trainer: {
+      from: 0,
+      to: 12,
+      mode: 'name',
+      strings: null, // per-string on/off for the current tuning; null = all
+      naturals: false,
+      dim: true,
+      adaptive: true,
+      sound: false,
+      bestTimed: null, // { name, find } best 60-second scores
+      stats: null, // { notes: {pc: [asked, correct]}, pos: {'openMidi:fret': [...]}, days: {'YYYY-MM-DD': [...]} }
+    },
     tuner: { mode: 'needle', target: 'instrument', a4: 440, lock: -1, sensitivity: 0.5 },
     metronome: {
       bpm: 100,
@@ -63,6 +75,11 @@
     saved = null;
   }
   FS.settings = merge(DEFAULTS, saved);
+  // v1: the circle-of-fifths colours became the default dot theme; move people off the old default once.
+  if (FS.settings.fretboard.themeVersion < 1) {
+    if (FS.settings.fretboard.dots === 'aurora') FS.settings.fretboard.dots = 'circle';
+    FS.settings.fretboard.themeVersion = 1;
+  }
   FS.DEFAULTS = DEFAULTS;
 
   let timer = null;

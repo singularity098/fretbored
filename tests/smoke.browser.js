@@ -107,26 +107,96 @@ const check = (label, actual, expected) => {
     check(`${P} circle: C Dorian`, await page.textContent('#panel-circle .hero-title'), 'C Dorian');
     await shot('circle');
 
-    // Trainer: answer one right and one wrong; questions stay inside the fret range.
+    // Trainer: name mode scoring, fret range, strings, naturals, find mode, saved progress.
     await page.click('#tab-trainer');
     await page.waitForTimeout(250);
+    const trPrompt = () => page.textContent('#panel-trainer .tr-prompt-text');
     const askedPc = () => page.evaluate(() => +document.querySelector('#panel-trainer .note').dataset.midi % 12);
-    await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);
-    check(`${P} trainer: right answer`, await page.textContent('#panel-trainer .tr-prompt'), /^✓ Correct/);
-    await page.waitForTimeout(900);
-    await page.click(`#panel-trainer .tr-answer[data-pc="${((await askedPc()) + 1) % 12}"]`);
-    check(`${P} trainer: wrong answer`, await page.textContent('#panel-trainer .tr-prompt'), /^✗ It’s/);
-    const stats = await page.$$eval('#panel-trainer .tr-stat-val', (els) => els.map((e) => e.textContent).join(' '));
-    check(`${P} trainer: score (asked correct accuracy streak)`, stats, /^2 1 50% 0 \(best 1\)$/);
-    await page.click('#panel-trainer .pill:has-text("5 – 9")');
-    const frets = [];
-    for (let i = 0; i < 12; i++) {
-      const m = (await page.textContent('#panel-trainer .tr-prompt')).match(/fret (\d+)/);
-      frets.push(m ? +m[1] : 0);
+    const answerRight = async () => {
       await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);
       await page.waitForTimeout(800);
+    };
+    await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);
+    check(`${P} trainer: right answer`, await trPrompt(), /^✓ Correct/);
+    await page.waitForTimeout(900);
+    await page.click(`#panel-trainer .tr-answer[data-pc="${((await askedPc()) + 1) % 12}"]`);
+    check(`${P} trainer: wrong answer`, await trPrompt(), /^✗ It’s/);
+    const stats = await page.$$eval('#panel-trainer .tr-stat-val', (els) => els.map((e) => e.textContent).join(' '));
+    check(`${P} trainer: score (asked correct accuracy streak)`, stats, /^2 1 50% 0 \(best 1\)$/);
+    await page.waitForTimeout(1800);
+
+    await page.click('#panel-trainer .pill:has-text("5 – 9")');
+    const where = [];
+    for (let i = 0; i < 10; i++) {
+      where.push(await trPrompt());
+      await answerRight();
     }
-    check(`${P} trainer: 12 questions all within frets 5–9`, String(frets.every((f) => f >= 5 && f <= 9)), 'true');
+    check(`${P} trainer: questions within frets 5–9`, String(where.every((w) => { const f = +(w.match(/fret (\d+)/) || [0, -1])[1]; return f >= 5 && f <= 9; })), 'true');
+
+    // Only string 6 (low E): turn the other five off.
+    for (let n = 1; n <= 5; n++) await page.click(`#panel-trainer .tr-string[title="String ${n}"]`);
+    const onStrings = [];
+    for (let i = 0; i < 6; i++) {
+      onStrings.push(await trPrompt());
+      await answerRight();
+    }
+    check(`${P} trainer: only string 6 asked`, String(onStrings.every((w) => w.startsWith('String 6'))), 'true');
+    for (let n = 1; n <= 5; n++) await page.click(`#panel-trainer .tr-string[title="String ${n}"]`);
+
+    // Natural notes only: 7 answer buttons, natural questions.
+    await page.click('#panel-trainer .tr-opt:has-text("Natural notes only")');
+    const visible = await page.$$eval('#panel-trainer .tr-answer', (bs) => bs.filter((b) => !b.hidden).length);
+    check(`${P} trainer: naturals shows 7 answer buttons`, String(visible), '7');
+    const pcs = [];
+    for (let i = 0; i < 8; i++) {
+      pcs.push(await askedPc());
+      await answerRight();
+    }
+    check(`${P} trainer: naturals only asks natural notes`, String(pcs.every((pc) => [0, 2, 4, 5, 7, 9, 11].includes(pc))), 'true');
+    await page.click('#panel-trainer .tr-opt:has-text("Natural notes only")');
+
+    // Find mode: one miss then all positions (counts as wrong), then a clean round.
+    await page.click('#panel-trainer .seg button:has-text("Find the note")');
+    await page.waitForTimeout(200);
+    const findTargets = () => page.evaluate(() => {
+      const txt = document.querySelector('#panel-trainer .tr-prompt-text').textContent;
+      const name = txt.match(/Tap every (\S+)/)[1].split('/')[0];
+      const pc = FS.theory.SHARP.findIndex((n) => FS.theory.pretty(n) === name);
+      const st = FS.settings.trainer;
+      const notes = FS.currentTuning().notes;
+      const right = [];
+      let wrong = null;
+      notes.forEach((open, s) => {
+        for (let f = st.from; f <= st.to; f++) {
+          if ((open + f) % 12 === pc) right.push([s, f]);
+          else if (!wrong) wrong = [s, f];
+        }
+      });
+      return { right, wrong };
+    });
+    const tapCell = async ([s, f]) => {
+      const el = await page.$(`#panel-trainer .cell[data-s="${s}"][data-f="${f}"] rect`);
+      await el.scrollIntoViewIfNeeded();
+      await el.click();
+    };
+    let tgt = await findTargets();
+    await tapCell(tgt.wrong);
+    check(`${P} trainer find: miss counted`, await trPrompt(), /1 miss/);
+    for (const c of tgt.right) await tapCell(c);
+    check(`${P} trainer find: finished with a miss`, await trPrompt(), /^✗ Here are all/);
+    await page.waitForTimeout(1900);
+    tgt = await findTargets();
+    for (const c of tgt.right) await tapCell(c);
+    check(`${P} trainer find: clean round`, await trPrompt(), /^✓ Found all/);
+    await page.waitForTimeout(900);
+    await page.click('#panel-trainer .seg button:has-text("Name the note")');
+
+    const saved = await page.evaluate(() => {
+      const st = JSON.parse(localStorage.getItem('fretbored:v1')).trainer.stats;
+      return Object.values(st.days).reduce((a, r) => a + r[0], 0);
+    });
+    check(`${P} trainer: progress saved (questions answered today)`, String(saved), '28');
+    check(`${P} trainer: history chart shows today`, String(await page.$$eval('#panel-trainer .tr-day-count', (d) => d[6].textContent)), /^\d+$/);
     await shot('trainer');
 
     // Metronome: one mixed buffer per beat; sixteenths at 120 BPM.
@@ -158,6 +228,28 @@ const check = (label, actual, expected) => {
     await page.waitForTimeout(150);
     check(`${P} tuner: mic released on leaving tab`, (await page.textContent('.tn-start')).trim(), /Start tuner/);
 
+    await ctx.close();
+  }
+
+  // 60-second challenge, with a fake clock so it doesn't take a minute.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => failures.push(`[challenge] page error: ${e.message}`));
+    await page.clock.install();
+    await page.goto(url + '#trainer');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.clock.runFor(500);
+    await page.click('#panel-trainer .tr-score-actions button:has-text("60-second challenge")');
+    for (let i = 0; i < 3; i++) {
+      const pc = await page.evaluate(() => +document.querySelector('#panel-trainer .note').dataset.midi % 12);
+      await page.click(`#panel-trainer .tr-answer[data-pc="${pc}"]`);
+      await page.clock.runFor(400);
+    }
+    await page.clock.runFor(61000);
+    check('[challenge] result', await page.textContent('#panel-trainer .tr-prompt-text'), /^⏱ Time! 3 correct out of 3 — new best!/);
+    check('[challenge] best saved', await page.evaluate(() => String(JSON.parse(localStorage.getItem('fretbored:v1')).trainer.bestTimed.name)), '3');
     await ctx.close();
   }
   await browser.close();

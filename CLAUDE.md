@@ -35,7 +35,7 @@ Script order in `index.html` matters:
 | `js/tunings.js` | `FS.TUNINGS` presets (MIDI notes, lowest string first; `flats` flag for label spelling), string/fret options |
 | `js/store.js` | `FS.settings` (persisted in localStorage key `fretbored:v1`), `FS.save()`, event bus `FS.on/emit`, tuning helpers, `FS.toast`, DOM helper `FS.h(tag, attrs, ...children)` |
 | `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote`, `prepare`), click samples (`loadSamples`, `playSample`, `playBuffer`) |
-| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Trainer), wood + dot themes, horizontal/vertical layout, tap / long-press / right-click handling |
+| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Trainer), wood + dot themes, horizontal/vertical layout, tap / long-press / right-click handling. Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f) }` — `color` overrides the theme (dark label), `isActive` shades other cells |
 | `js/fbcontrols.js` | Shared fretboard settings bar + custom tuning editor dialog |
 | `js/nowbar.js` | Pinned "now viewing" bar shown when a tab's title scrolls away |
 | `js/scales.js`, `chords.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
@@ -47,7 +47,13 @@ Events: `fretboard` (any fretboard setting or tuning changed → re-render), `ta
 `scales:set` (Circle → Scales hand-off).
 
 Settings: add new keys to `DEFAULTS` in `store.js`. `merge()` drops unknown keys and replaces
-values whose type doesn't match the default (a default of `null` accepts anything).
+values whose type doesn't match the default (a default of `null` accepts anything). A nested
+object default only keeps the keys it lists, so free-form maps (e.g. `trainer.stats`) must default
+to `null` and be initialised in code. To change a default for people who already have the old one
+saved, bump a version key and migrate once in `store.js` (see `fretboard.themeVersion`).
+
+Dot themes live in `FS.DOT_THEMES` (`fretboard.js`). Default is `circle` — the owner asked for the
+circle-of-fifths colours (coral root, violet notes, white labels) everywhere a fretboard appears.
 
 ### Music-theory conventions
 
@@ -106,6 +112,9 @@ node tests/smoke.browser.js [screenshot-dir]   # headless Chromium, desktop + ph
   Firefox-specific bugs can't be reproduced here — say so and ask the owner to verify on device.
 - For touch long-press tests use CDP `Input.dispatchTouchEvent`, and scroll the target into view
   first (the fretboard is below the fold on phones).
+- Seeding localStorage in a test: wait for the page's debounced save (150 ms) first, and `reload()`
+  afterwards — `goto` to the same page with a different `#hash` does not reload it.
+- Long timers (the 60-second challenge) are tested with Playwright's fake clock (`page.clock`).
 - Look at screenshots after UI changes (phone 390×844 and desktop).
 
 ## Workflow and deployment

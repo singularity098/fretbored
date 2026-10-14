@@ -5,7 +5,7 @@ Guitar scales, chords, circle of fifths and a precise metronome — in the brows
 - **Scales**: any key, ~55 scales across Common / Rare / Exotic. Click frets to add or remove notes and Fretbored works out which scale you've made; right-click or long-press to change the root.
 - **Chords**: 12 core chord types plus ~25 advanced ones, generated as playable voicings for your tuning in several positions up the neck. Edit the shape and the chord is re-identified (including slash chords).
 - **Circle of Fifths**: pick a key and mode to see diatonic chords with Roman numerals, key signature and related keys.
-- **Trainer**: a fretboard note-naming game with a configurable fret range, score, accuracy and streak.
+- **Trainer**: fretboard note games — name the highlighted note, or find every place a note occurs — with fret/string practice areas, naturals-only, weak-spot focus, sound, a 60-second challenge, and saved progress (7-day history, accuracy by note and string).
 - **Tuner**: traditional needle and strobe modes, instrument (per-string, using your tuning) or chromatic, adjustable A4 reference and reference tones.
 - **Metronome**: tap tempo, accents, odd-meter grouping, subdivisions, step and gradual tempo trainer, gap trainer. Sample-accurate Web Audio scheduling.
 - Shared fretboard settings: 4–8 strings (guitar and bass), preset and custom tunings, 21/22/24 frets, note or interval labels, dot color themes, ebony/rosewood/maple, left-handed mode, and a sideways or vertical layout on phones.
