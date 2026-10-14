@@ -197,6 +197,8 @@ main { max-width: 1320px; margin: 0 auto; padding: 20px 20px 8px; }
 
 .hint { margin: 10px 2px 0; font-size: 13px; color: var(--text-3); }
 .hint.center { text-align: center; }
+.tap-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.tap-row .hint { margin: 0; flex: 1 1 260px; }
 
 .section-title {
   margin: 4px 0 10px;

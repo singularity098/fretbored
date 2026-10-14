@@ -274,46 +274,83 @@
         if (this.handlers.onRoot) this.handlers.onRoot(c.s, c.f);
       };
 
+      // Long-press (touch) sets the root. Firefox for Android runs its own long-press gesture
+      // and may send pointercancel mid-press, so touch events are tracked too and a press is
+      // only abandoned when the finger actually moves (e.g. to scroll).
+      const LONG_MS = 450;
+      const begin = (c, x, y) => {
+        if (press && press.timer) clearTimeout(press.timer);
+        press = { c, x, y, long: false, moved: false, at: Date.now(), timer: null };
+        press.timer = setTimeout(() => {
+          if (!press || press.moved) return;
+          press.long = true;
+          try {
+            if (navigator.vibrate) navigator.vibrate(15);
+          } catch (err) {
+            /* vibration unsupported */
+          }
+          fireRoot(press.c);
+        }, LONG_MS);
+      };
+      const moveTo = (x, y) => {
+        if (press && !press.moved && Math.hypot(x - press.x, y - press.y) > 12) {
+          press.moved = true;
+          clearTimeout(press.timer);
+        }
+      };
+      const release = () => {
+        if (press && press.timer && !press.long) clearTimeout(press.timer);
+      };
+      const sameCell = (a, b) => a && b && a.s === b.s && a.f === b.f;
+
       host.addEventListener('pointerdown', (e) => {
         const c = cellOf(e);
         if (!c) return;
-        press = { c, x: e.clientX, y: e.clientY, long: false, timer: null };
-        if (e.pointerType !== 'mouse') {
-          press.timer = setTimeout(() => {
-            if (!press) return;
-            press.long = true;
-            if (navigator.vibrate) navigator.vibrate(15);
-            fireRoot(c);
-          }, 480);
-        }
+        if (e.pointerType === 'mouse') press = { c, x: e.clientX, y: e.clientY, long: false, moved: false, timer: null };
+        else begin(c, e.clientX, e.clientY);
       });
-      const cancel = () => {
-        if (press && press.timer) clearTimeout(press.timer);
-      };
+      host.addEventListener(
+        'touchstart',
+        (e) => {
+          if (e.touches.length > 1) {
+            release();
+            if (press) press.moved = true;
+            return;
+          }
+          const c = cellOf(e);
+          if (!c) return;
+          // pointerdown usually got here first for the same touch
+          if (press && sameCell(press.c, c) && Date.now() - press.at < 100) return;
+          begin(c, e.touches[0].clientX, e.touches[0].clientY);
+        },
+        { passive: true }
+      );
       host.addEventListener('pointermove', (e) => {
-        if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > 10) {
-          cancel();
-          press.moved = true;
-        }
+        if (e.pointerType !== 'mouse') moveTo(e.clientX, e.clientY);
       });
-      host.addEventListener('pointercancel', () => {
-        cancel();
-        press = null;
-      });
+      host.addEventListener('touchmove', (e) => moveTo(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+      host.addEventListener('pointerup', release);
+      host.addEventListener('touchend', release, { passive: true });
+      host.addEventListener('touchcancel', () => {
+        release();
+        if (press) press.moved = true;
+      }, { passive: true });
       host.addEventListener('click', (e) => {
         const c = cellOf(e);
         const p = press;
-        cancel();
+        release();
         press = null;
         if (!c || (p && (p.long || p.moved))) return;
-        if (Date.now() - lastRootAt < 600) return;
+        // A click right after a long-press root change is the tail of that press (touch only).
+        if (Date.now() - lastRootAt < 600 && !(p && p.timer === null)) return;
         if (this.handlers.onToggle) this.handlers.onToggle(c.s, c.f);
       });
       host.addEventListener('contextmenu', (e) => {
         const c = cellOf(e);
         if (!c) return;
         e.preventDefault();
-        cancel();
+        release();
+        if (press) press.long = true; // swallow the click that may follow
         fireRoot(c);
       });
     }

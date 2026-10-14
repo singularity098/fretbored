@@ -37,6 +37,15 @@
     const fbControls = h('div');
     const fbHost = h('div');
 
+    // What a plain tap does. "Set root" is a gesture-free alternative to long-press.
+    let tapMode = 'toggle';
+    const tapSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Tap action' });
+    for (const [v, label] of [['toggle', 'Add / remove'], ['root', 'Set root']]) {
+      tapSeg.append(h('button', { dataset: { v }, onclick: () => { tapMode = v; renderTapSeg(); } }, label));
+    }
+    const renderTapSeg = () => tapSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === tapMode));
+    renderTapSeg();
+
     panel.append(
       h('div', { class: 'card controls' },
         h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Key'), rootPills),
@@ -53,13 +62,16 @@
       h('div', { class: 'card board-card' },
         fbControls,
         fbHost,
-        h('p', { class: 'hint' }, 'Tap a fret to add or remove that note everywhere · Right-click or long-press a note to make it the root')
+        h('div', { class: 'tap-row' },
+          h('span', { class: 'field-label' }, 'Tap to'),
+          tapSeg,
+          h('span', { class: 'hint' }, 'Add / remove changes that note everywhere · Right-click or long-press a note to make it the root'))
       )
     );
 
     FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, {
-      onToggle: (s, f) => toggle(pcAt(s, f)),
+      onToggle: (s, f) => (tapMode === 'root' ? makeRoot(pcAt(s, f)) : toggle(pcAt(s, f))),
       onRoot: (s, f) => makeRoot(pcAt(s, f)),
     });
 

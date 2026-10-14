@@ -24,6 +24,7 @@
 - User may click on a fret to add or remove a note, or change the root note. The program will automatically figure out if this changes to some other known scale and adjust the selection accordingly.
   - Click / tap a fret to add or remove that note everywhere on the neck
   - Right-click (desktop) or long-press (touch) a note to make it the root
+  - A "Tap to: Add / remove · Set root" switch under the fretboard lets a plain tap set the root, as a gesture-free alternative
   - If the notes don't form a known scale, the scale is shown as "Custom" with the closest matches (e.g. "Dorian +B −B♭") and any scale the same notes form from another root; tapping a suggestion selects it
   - Scales that share the same notes as other scales/modes are listed (e.g. C Major = D Dorian = A Natural Minor …)
 - The user may click on a play button which will play a brief ascension up the scale until the next octave
