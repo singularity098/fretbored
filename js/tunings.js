@@ -1,4 +1,4 @@
-/* Fretscape — preset tunings. MIDI note numbers, lowest string first. */
+/* Fretbored — preset tunings. MIDI note numbers, lowest string first. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

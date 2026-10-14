@@ -1,8 +1,8 @@
-# Fretscape
+# Fretbored
 
 Guitar scales, chords, circle of fifths and a precise metronome — in the browser, with no dependencies.
 
-- **Scales**: any key, ~55 scales across Common / Rare / Exotic. Click frets to add or remove notes and Fretscape works out which scale you've made; right-click or long-press to change the root.
+- **Scales**: any key, ~55 scales across Common / Rare / Exotic. Click frets to add or remove notes and Fretbored works out which scale you've made; right-click or long-press to change the root.
 - **Chords**: 12 core chord types plus ~25 advanced ones, generated as playable voicings for your tuning in several positions up the neck. Edit the shape and the chord is re-identified (including slash chords).
 - **Circle of Fifths**: pick a key and mode to see diatonic chords with Roman numerals, key signature and related keys.
 - **Metronome**: tap tempo, accents, odd-meter grouping, subdivisions, step and gradual tempo trainer, gap trainer. Sample-accurate Web Audio scheduling.
@@ -20,7 +20,9 @@ The site is static, so GitHub Pages can serve it straight from the repository:
 
 1. Repository **Settings → Pages**.
 2. Under **Build and deployment**, choose **Deploy from a branch**, pick the branch (e.g. `main`) and the `/ (root)` folder, then **Save**.
-3. After a minute the site is live at `https://<user>.github.io/fretscape/`.
+3. After a minute the site is live at `https://<user>.github.io/fretbored/`.
+
+Live site: **https://singularity098.github.io/fretbored/**
 
 (The `.nojekyll` file tells Pages to serve the files as-is.)
 

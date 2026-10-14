@@ -1,4 +1,4 @@
-/* Fretscape — Web Audio: shared context, plucked-string synth, embedded click samples. */
+/* Fretbored — Web Audio: shared context, plucked-string synth, embedded click samples. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

@@ -1,4 +1,4 @@
-/* Fretscape — Metronome tab.
+/* Fretbored — Metronome tab.
  *
  * Timing: every click is scheduled on the Web Audio clock (sample-accurate) a little
  * ahead of time by a lookahead loop, so JavaScript timer jitter never reaches the audio.

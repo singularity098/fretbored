@@ -1,4 +1,4 @@
-### Fretscape
+### Fretbored
 - Beautiful interface with dark theme by default (a light theme is available from the toggle in the top bar)
 - Works in a web browser with no dependencies
   - Plain HTML, CSS and JavaScript — no build step, no libraries, no network requests

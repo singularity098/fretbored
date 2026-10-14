@@ -1,4 +1,4 @@
-/* Fretscape — SVG fretboard shared by the Scales and Chords tabs. */
+/* Fretbored — SVG fretboard shared by the Scales and Chords tabs. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

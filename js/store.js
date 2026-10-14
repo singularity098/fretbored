@@ -1,8 +1,8 @@
-/* Fretscape — settings persistence and a tiny event bus. */
+/* Fretbored — settings persistence and a tiny event bus. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});
-  const KEY = 'fretscape:v1';
+  const KEY = 'fretbored:v1';
 
   const DEFAULTS = {
     tab: 'scales',

@@ -1,4 +1,4 @@
-/* Fretscape — Guitar Scales tab. */
+/* Fretbored — Guitar Scales tab. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

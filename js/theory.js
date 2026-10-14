@@ -1,4 +1,4 @@
-/* Fretscape — music theory core: notes, spelling, scales, chords, matching, voicings. */
+/* Fretbored — music theory core: notes, spelling, scales, chords, matching, voicings. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

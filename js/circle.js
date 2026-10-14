@@ -1,4 +1,4 @@
-/* Fretscape — Circle of Fifths tab. */
+/* Fretbored — Circle of Fifths tab. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

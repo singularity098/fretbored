@@ -1,4 +1,4 @@
-/* Fretscape — Guitar Chords tab. */
+/* Fretbored — Guitar Chords tab. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

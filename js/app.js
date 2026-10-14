@@ -1,4 +1,4 @@
-/* Fretscape — app shell: tabs, theme, startup. */
+/* Fretbored — app shell: tabs, theme, startup. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});

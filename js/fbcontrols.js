@@ -1,4 +1,4 @@
-/* Fretscape — fretboard settings bar (shared state) and the custom tuning editor. */
+/* Fretbored — fretboard settings bar (shared state) and the custom tuning editor. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});
