@@ -99,6 +99,23 @@ const check = (label, actual, expected) => {
     check(`${P} chords: edited shape identified`, await page.textContent('#panel-chords .hero-title'), 'Cadd11');
     await shot('chords');
 
+    // Arpeggios: C major open position, tab in playing order, position switch, playback highlight.
+    await page.click('#tab-arpeggios');
+    await page.waitForTimeout(250);
+    check(`${P} arpeggios: title`, (await page.textContent('#panel-arpeggios .hero-title')).trim(), 'C major arpeggio');
+    const tabFrets = () => page.$$eval('#panel-arpeggios .tab-note text', (els) => els.map((e) => e.textContent).join(' '));
+    // Open C: low E 0 3, A 3, D 2, G 0, B 1, high E 0 3 — up and back down.
+    check(`${P} arpeggios: open-position tab (up & down)`, await tabFrets(), '0 3 3 2 0 1 0 3 0 1 0 2 3 3 0');
+    check(`${P} arpeggios: dots match tab`, String(await page.$$eval('#panel-arpeggios .fretboard .note', (n) => n.length)), '8');
+    await page.click('#panel-arpeggios .pill[title^="Frets 5"]');
+    await page.waitForTimeout(150);
+    check(`${P} arpeggios: position 2 tab`, await tabFrets(), /^8 7 5 5 5 8 8/);
+    await page.click('#panel-arpeggios .play-btn');
+    await page.waitForTimeout(700);
+    check(`${P} arpeggios: playback highlights the tab`, String(await page.$$eval('#panel-arpeggios .tab-note.on', (n) => n.length)), '1');
+    await page.click('#panel-arpeggios .play-btn');
+    await shot('arpeggios');
+
     // Circle of fifths: D Dorian.
     await page.click('#tab-circle');
     await page.waitForTimeout(250);
@@ -111,6 +128,7 @@ const check = (label, actual, expected) => {
     await page.click('#tab-trainer');
     await page.waitForTimeout(250);
     const trPrompt = () => page.textContent('#panel-trainer .tr-prompt-text');
+    check(`${P} trainer: default practice area`, (await page.textContent('#panel-trainer .pill.active')).trim(), 'Open – 12');
     const askedPc = () => page.evaluate(() => +document.querySelector('#panel-trainer .note').dataset.midi % 12);
     const answerRight = async () => {
       await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);

@@ -7,7 +7,7 @@
 - Works both in desktop browsers and mobile
   - On narrow screens the fretboard scrolls sideways by default; a Layout toggle (phones only) switches it to a vertical fretboard that scrolls down the page
 - Link to github repository at the top right corner
-- Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome, plus Trainer (between Circle of Fifths and Metronome) and Tuner tabs
+- Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome, plus Arpeggios (after Chords), Trainer (between Circle of Fifths and Metronome) and Tuner tabs
 - On the Scales and Chords tabs, a slim bar pinned under the tabs shows the current scale or chord (name, notes, chord position) with a play button and a back-to-top button whenever the title has scrolled out of view
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
 - For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from
@@ -42,6 +42,13 @@
 - User may also manually add or remove notes by clicking on them, and the application will automatically figure out if there is some chord match and change the selection
   - Tapping a fret moves that string's note there; tapping a played note again mutes the string
   - Inversions are named as slash chords (e.g. C/E), and alternative names are shown (e.g. C6 = Am7/C)
+##### Arpeggios tab
+- Similar to the chords tab: pick any root and an arpeggio type (the same basic and Advanced types as chords)
+- Common arpeggio shapes in positions up the neck (1, 2, 3 …): each position is a 4–5 fret box with every chord tone in it, each pitch once, generated for the current tuning
+- The shape is shown as dots on the shared fretboard (roots highlighted; "All arpeggio tones" shows the rest of the neck faintly) and as tablature in playing order, so it's easy to see how to play it
+- Direction: Up, or Up & down; Play button with Slow/Medium/Fast speed — the current note lights up in the tab and on the fretboard
+- Tap a fretboard note to hear it; the pinned "now viewing" bar shows the arpeggio while scrolling
+
 ##### Circle of Fifths
 - A beautiful circle of fifths is displayed
   - Rings for major keys, relative minors and diminished chords, plus key signatures
@@ -54,7 +61,7 @@
 - Two games:
   - Name the note: a random note is highlighted on the fretboard (with its string and fret shown) and the user picks its name from 12 buttons below the fretboard (sharp/flat names shown together)
   - Find the note: the app names a note and the user taps every place it occurs in the practice area; a miss shows the tapped note in red; three misses or "Show answer" reveals them all; a round counts as correct only with no misses
-- The practice area can be limited to a section of the neck — presets (Open–4, 5–9, 7–12, 12–17, All frets) or any custom from/to fret range — and to chosen strings ("Quiz strings")
+- The practice area can be limited to a section of the neck — presets (Open–12 — the default, Open–4, 5–9, 7–12, 12–17, All frets) or any custom from/to fret range — and to chosen strings ("Quiz strings")
 - Options: Natural notes only (hides the sharp/flat buttons), Dim outside range (shades the frets and strings not being quizzed), Focus on weak spots (asks more often the notes and positions answered wrong before), Play sound (plays the note with each question, with a Replay button)
 - Tracks questions asked, correct answers, accuracy and the current/best streak; Reset score button
 - 60-second challenge: count correct answers in a minute; the best score per game is saved

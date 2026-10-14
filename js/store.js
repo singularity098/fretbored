@@ -21,8 +21,10 @@
     },
     scales: { root: 0, scaleId: 'major', pcs: null, category: 'common', lastScale: null },
     chords: { root: 0, chordId: 'maj', position: 0, advanced: false, showAll: false, custom: null },
+    arpeggios: { root: 0, chordId: 'maj', position: 0, advanced: false, showAll: false, order: 'updown', speed: 'medium' },
     circle: { tonic: 0, mode: 0 },
     trainer: {
+      version: 0, // bumped to migrate saved trainer settings once
       from: 0,
       to: 12,
       mode: 'name',
@@ -75,6 +77,12 @@
     saved = null;
   }
   FS.settings = merge(DEFAULTS, saved);
+  // Trainer v1: the default practice area is Open–12; reset ranges saved before that existed.
+  if (FS.settings.trainer.version < 1) {
+    FS.settings.trainer.from = 0;
+    FS.settings.trainer.to = 12;
+    FS.settings.trainer.version = 1;
+  }
   // v1: the circle-of-fifths colours became the default dot theme; move people off the old default once.
   if (FS.settings.fretboard.themeVersion < 1) {
     if (FS.settings.fretboard.dots === 'aurora') FS.settings.fretboard.dots = 'circle';

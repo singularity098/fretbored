@@ -413,6 +413,55 @@
     return picked;
   }
 
+  /* ---------------------------------------------------------------- Arpeggios */
+
+  /**
+   * Arpeggio shapes: for each hand position (a 5-fret box; the open box is frets 0–4), every chord
+   * tone in the box, each pitch once (a pitch reachable on two strings keeps the fret nearer the
+   * middle of the box). Overlapping boxes are clustered and the fullest kept, giving positions up
+   * the neck. Returns [{ lo, hi, notes: [{ s, f, midi, iv }] (ascending pitch), roots }].
+   */
+  function generateArpeggioShapes(tuning, numFrets, rootPc, chord) {
+    const n = tuning.length;
+    const WIDTH = 4; // frets lo..lo+4
+    const shapes = [];
+    for (let lo = 0; lo + WIDTH <= numFrets; lo++) {
+      const hi = lo + WIDTH;
+      const mid = (lo + hi) / 2;
+      const byPitch = new Map();
+      for (let s = 0; s < n; s++) {
+        for (let f = lo; f <= hi; f++) {
+          if (lo > 0 && f === 0) continue;
+          const midi = tuning[s] + f;
+          const iv = mod12(midi - rootPc);
+          if (!(chord.mask & bit(iv))) continue;
+          const cur = byPitch.get(midi);
+          if (!cur || Math.abs(f - mid) < Math.abs(cur.f - mid)) byPitch.set(midi, { s, f, midi, iv });
+        }
+      }
+      const notes = [...byPitch.values()].sort((a, b) => a.midi - b.midi);
+      const roots = notes.filter((x) => x.iv === 0).length;
+      if (roots < 1 || notes.length < chord.intervals.length) continue;
+      // Prefer full boxes with two or more roots, starting near the low strings.
+      const score = notes.length + roots * 2 - (notes[0].s > 1 ? 2 : 0);
+      const key = notes.map((x) => `${x.s}:${x.f}`).join(' ');
+      if (shapes.length && shapes[shapes.length - 1].key === key) continue; // same notes as the previous box
+      const frets = notes.map((x) => x.f);
+      shapes.push({ lo: Math.min(...frets), hi: Math.max(...frets), notes, roots, score, key });
+    }
+    const picked = [];
+    let start = -Infinity;
+    for (const sh of shapes) {
+      if (sh.lo - start < 3 && picked.length) {
+        if (sh.score > picked[picked.length - 1].score) picked[picked.length - 1] = sh;
+      } else {
+        start = sh.lo;
+        picked.push(sh);
+      }
+    }
+    return picked;
+  }
+
   /* ---------------------------------------------------------------- Modes */
 
   const MODES = [
@@ -453,6 +502,7 @@
     CHORD_BY_ID,
     identifyChord,
     generateVoicings,
+    generateArpeggioShapes,
     MODES,
     MODE_SCALE,
   };

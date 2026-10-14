@@ -122,4 +122,30 @@ test('voicings exist on every preset tuning for basic chords', () => {
   }
 });
 
+test('arpeggio shapes', () => {
+  const std = FS.TUNINGS.find((t) => t.id === 'std6').notes;
+  const shapes = T.generateArpeggioShapes(std, 22, 0, T.CHORD_BY_ID.maj);
+  assert(shapes.length >= 4, `expected several C major positions, got ${shapes.length}`);
+  for (const sh of shapes) {
+    const midis = sh.notes.map((x) => x.midi);
+    assert.strictEqual(JSON.stringify(midis), JSON.stringify([...midis].sort((a, b) => a - b)), 'ascending');
+    assert.strictEqual(new Set(midis).size, midis.length, 'each pitch once');
+    for (const x of sh.notes) {
+      assert([0, 4, 7].includes(x.iv), 'only chord tones');
+      assert(x.f >= sh.lo && x.f <= sh.hi, 'inside the box');
+      assert.strictEqual(x.midi, std[x.s] + x.f);
+    }
+    assert(sh.roots >= 1);
+  }
+  // Open position C: C E G C E G from the A string up (plus low E/G).
+  const open = shapes[0];
+  assert.strictEqual(open.lo, 0);
+  assert.deepStrictEqual(open.notes.map((x) => T.SHARP[T.mod12(x.midi)]).join(' '), 'E G C E G C E G');
+  // Every chord type in every key has at least one shape on standard guitar.
+  for (const c of T.CHORDS) for (let r = 0; r < 12; r++) assert(T.generateArpeggioShapes(std, 22, r, c).length > 0, `${r} ${c.id}`);
+  if (process.env.VERBOSE) {
+    for (const sh of shapes) console.log(sh.lo + '-' + sh.hi, sh.notes.map((x) => `${x.s}:${x.f}`).join(' '));
+  }
+});
+
 console.log(`${passed} tests passed`);
