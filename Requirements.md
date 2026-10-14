@@ -1,24 +1,61 @@
 ### Fretscape
-- Beautiful interface with dark theme by default
+- Beautiful interface with dark theme by default (a light theme is available from the toggle in the top bar)
 - Works in a web browser with no dependencies
+  - Plain HTML, CSS and JavaScript — no build step, no libraries, no network requests
+  - Works when `index.html` is opened directly from disk (offline); the metronome sounds are embedded in the page
+  - Hosted on GitHub Pages
 - Works both in desktop browsers and mobile
+  - On narrow screens the fretboard scrolls sideways
 - Link to github repository at the top right corner
 - Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome
+- All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
 - For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from
+  - Preset tunings per string count, including drop tunings for 7-string (Drop A, Drop G♯, Drop G) and 8-string (Drop E, Drop E♭, Drop D) guitars
+  - Fully custom tuning editor: set each string's note and octave, name it, save it; custom tunings can be edited or deleted later
+  - Dot labels toggle between note names and interval degrees (1, ♭3, 5 …)
+  - Note names are spelled correctly for the key (sharps vs flats chosen automatically, e.g. B♭ in F major, F♯ in G major)
+  - Left-handed mode mirrors the fretboard
+  - Fretboard wood: Ebony (default), Rosewood or Maple
+  - Dot color themes: Aurora, Amber, Neon, Forest, Ivory, Spectrum (one color per interval)
 ##### Guitar Scales Tab
 - User may select any key desired, and they display in the fretboard with root note highlighted
 - The user may select scales from 3 categories: Common, Rare, Exotic
 - User may click on a fret to add or remove a note, or change the root note. The program will automatically figure out if this changes to some other known scale and adjust the selection accordingly.
+  - Click / tap a fret to add or remove that note everywhere on the neck
+  - Right-click (desktop) or long-press (touch) a note to make it the root
+  - If the notes don't form a known scale, the scale is shown as "Custom" with the closest matches (e.g. "Dorian +B −B♭") and any scale the same notes form from another root; tapping a suggestion selects it
+  - Scales that share the same notes as other scales/modes are listed (e.g. C Major = D Dorian = A Natural Minor …)
 - The user may click on a play button which will play a brief ascension up the scale until the next octave
+  - Notes light up on the fretboard as they play
 ##### Guitar chords tab
 - Similar to guitar scales tab, the user may select any root note
 - The user may then select the type of chord, major minor, 7, 5, dim, dim7, aug, sus2, sus4, maj7, m7, 7sus4
 - There is an "Advanced" button which will reveal many more advanced and uncommon chords
+  - 6, m6, 6/9, add9, m(add9), add11, 7sus2, m7♭5, m(maj7), 7♭5, 7♯5, maj7♯5, maj7♭5, 9, maj9, m9, 7♭9, 7♯9, 9sus4, 7♯11, 11, m11, 13, maj13, m13
 - There is a position selection as well, example 1, 2, 3, 4, 5, which designates roughly how far up on the fretboard the chord lands.
+  - Playable voicings are generated for the current tuning (root in the bass, max 4 fingers or a barre, 4-fret span)
+  - A chord diagram shows the selected shape, and a "Strum" button plays it
+  - "All chord tones" toggle shows every chord tone on the neck behind the selected shape
 - User may also manually add or remove notes by clicking on them, and the application will automatically figure out if there is some chord match and change the selection
+  - Tapping a fret moves that string's note there; tapping a played note again mutes the string
+  - Inversions are named as slash chords (e.g. C/E), and alternative names are shown (e.g. C6 = Am7/C)
 ##### Circle of Fifths
 - A beautiful circle of fifths is displayed
+  - Rings for major keys, relative minors and diminished chords, plus key signatures
 - The user may change the key or the mode, and the display will update with the new information
+  - The seven diatonic chords are highlighted on the circle with Roman numerals relative to the tonic
+  - Shows the scale's notes, diatonic triads and seventh chords (tap to hear), key signature, relative keys and the mode's character
+  - Clicking a segment of the circle selects that key; "Show on fretboard" opens the scale in the Scales tab
 ##### Metronome
 - A full featured metronome, allowing the user to adjust tempo, tap tempo, accents (meter, beats, division), and a trainer mode which allows a user configurable increase in tempo from a start to end tempo at steps, and also a gradually accelerating mode
+  - Tempo 20–300 BPM via slider, ±1/±5 buttons (hold to repeat), number entry, tap tempo, or keyboard (Space, ↑/↓, T)
+  - Meter: 1–16 beats over 2, 4, 8 or 16; beat grouping for compound/odd meters (e.g. 7/8 as 2+2+3)
+  - Per-beat accents: tap a beat to cycle accent / normal / soft / mute
+  - Subdivisions: eighths, triplets, sixteenths, quintuplets, sextuplets, swing, dotted, and mixed 8th/16th figures
+  - Sounds: Classic and Digital (the supplied samples) and Beep; separate volume for subdivisions
+  - Trainer: Step mode (+N BPM every M bars from start to end tempo) and Gradual mode (smooth ramp over N bars); works for slowing down too
+  - Gap trainer: play N bars, then mute M bars to test internal time
+  - Visual pulse and sweeping indicator synced to what you hear
+  - Keeps the screen awake while running on supporting mobile browsers
 - The timing must be perfectly accurate
+  - Every click is scheduled on the Web Audio clock (sample-accurate), ahead of time, so browser timer jitter never affects the audio
