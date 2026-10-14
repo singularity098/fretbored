@@ -11,11 +11,8 @@
 
   const MIN_BPM = 20;
   const MAX_BPM = 300;
-  // Seconds of audio scheduled ahead. Generous, because on phones the audio clock can jump in
-  // large steps and the page can be busy redrawing after a tap; a click that is only scheduled
-  // once its time has passed would play late. Changes still apply from the next beat.
-  const MIN_LOOKAHEAD = 0.3;
-  const LATE_TOLERANCE = 0.004; // a click this late is dropped rather than played out of time
+  const LOOKAHEAD = 0.15; // seconds of audio scheduled ahead
+  const STALL = 0.25; // if scheduling falls this far behind (e.g. a suspended tab), skip missed beats
   const TICK_MS = 25;
 
   const SUBDIVISIONS = [
@@ -176,18 +173,14 @@
       resetVisuals();
     }
 
-    function lookahead(ctx) {
-      return Math.max(MIN_LOOKAHEAD, (ctx.baseLatency || 0) + (ctx.outputLatency || 0) + 0.2);
-    }
-
     function schedule() {
       if (!eng.running) return;
       const ctx = FS.audio.ctx();
       const now = ctx.currentTime;
-      // If we fell behind (e.g. the tab was suspended), skip the missed beats silently and
+      // If we fell far behind (e.g. the tab was suspended), skip the missed beats silently and
       // stay on the grid instead of firing a burst of overdue clicks.
-      while (eng.nextTime < now - LATE_TOLERANCE) advance();
-      const horizon = now + lookahead(ctx);
+      while (eng.nextTime < now - STALL) advance();
+      const horizon = now + LOOKAHEAD;
       while (eng.nextTime < horizon) {
         scheduleBeat(eng.nextTime, 60 / eng.liveBpm);
         advance();
@@ -197,7 +190,6 @@
     }
 
     function click(name, time, gain) {
-      if (time < FS.audio.ctx().currentTime - LATE_TOLERANCE) return; // never play out of time
       const src = FS.audio.playSample(name, time, gain);
       if (src) eng.sources.push({ src, time });
     }
@@ -502,8 +494,8 @@
 
     function renderTempo() {
       const shown = eng.running ? eng.liveBpm : trainerOn() ? m.trainer.start : m.bpm;
-      bpmNum.textContent = Math.round(shown);
-      bpmMark.textContent = tempoMarking(shown);
+      setText(bpmNum, Math.round(shown));
+      setText(bpmMark, tempoMarking(shown));
       slider.value = m.bpm;
       if (document.activeElement !== bpmInput) bpmInput.value = m.bpm;
       const locked = trainerOn();
@@ -542,7 +534,7 @@
       const el = Math.max(0, ctx.currentTime - eng.startTime);
       const mm = Math.floor(el / 60);
       const ss = String(Math.floor(el % 60)).padStart(2, '0');
-      status.textContent = `Bar ${c.bar + 1} · Beat ${c.beat + 1} · ${mm}:${ss}${c.silent ? ' · (muted)' : ''}`;
+      setText(status, `Bar ${c.bar + 1} · Beat ${c.beat + 1} · ${mm}:${ss}${c.silent ? ' · (muted)' : ''}`);
     }
 
     function renderTrainer() {
@@ -602,6 +594,12 @@
       sweep.classList.remove('silent');
     }
 
+    // Writing unchanged text still costs a re-layout in some browsers.
+    function setText(el, v) {
+      v = String(v);
+      if (el.textContent !== v) el.textContent = v;
+    }
+
     let lastStatus = 0;
     function draw() {
       if (!eng.running) return;
@@ -617,13 +615,15 @@
         if (changed) {
           [...dots.children].forEach((d, i) => d.classList.toggle('on', i === c.beat));
           sweep.classList.toggle('silent', c.silent);
-          bpmNum.textContent = Math.round(c.bpm);
-          bpmMark.textContent = tempoMarking(c.bpm);
+          setText(bpmNum, Math.round(c.bpm));
+          setText(bpmMark, tempoMarking(c.bpm));
+          // Alternate between two identical animations to restart the pulse without
+          // forcing a layout on every beat.
           const pulse = dots.children[c.beat];
           if (pulse) {
-            pulse.classList.remove('hit');
-            void pulse.offsetWidth;
-            pulse.classList.add('hit');
+            const cls = c.n % 2 ? 'hit-a' : 'hit-b';
+            pulse.classList.remove('hit-a', 'hit-b');
+            pulse.classList.add(cls);
           }
           updateTrainerProgress();
         }

@@ -447,7 +447,10 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 .fretboard .note.enter .dot { animation: dotScale 0.22s ease-out; transform-origin: center; transform-box: fill-box; }
 @keyframes dotIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dotScale { from { transform: scale(0.4); } to { transform: scale(1); } }
-.fretboard .note.playing .dot { animation: ping 0.32s ease-out; transform-box: fill-box; transform-origin: center; stroke: #fff; stroke-width: 3; }
+.fretboard .note.playing-a .dot, .fretboard .note.playing-b .dot { transform-box: fill-box; transform-origin: center; stroke: #fff; stroke-width: 3; }
+.fretboard .note.playing-a .dot { animation: ping 0.32s ease-out; }
+.fretboard .note.playing-b .dot { animation: ping2 0.32s ease-out; }
+@keyframes ping2 { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @keyframes ping { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 
 /* ---------------------------------------------------------------- Circle of fifths */
@@ -530,7 +533,7 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
   display: grid; place-items: center; width: var(--size); height: var(--size); border-radius: 50%;
   font-size: 13px; font-weight: 800; color: var(--text-2);
   background: var(--surface-2); border: 2px solid var(--border-strong);
-  transition: background 0.08s, transform 0.08s, box-shadow 0.15s, width 0.15s, height 0.15s;
+  transition: background 0.08s, width 0.15s, height 0.15s;
 }
 .beat-dot[data-level='3'] span { --size: 44px; background: color-mix(in srgb, var(--accent) 30%, var(--surface-2)); border-color: var(--accent); color: var(--text); }
 .beat-dot[data-level='2'] span { --size: 38px; background: color-mix(in srgb, var(--accent-2) 22%, var(--surface-2)); border-color: color-mix(in srgb, var(--accent-2) 60%, transparent); }
@@ -539,8 +542,10 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 .beat-dot.on span { background: var(--accent); color: #fff; box-shadow: 0 0 22px var(--accent); }
 .beat-dot.on[data-level='2'] span, .beat-dot.on[data-level='1'] span { background: var(--accent-2); box-shadow: 0 0 22px var(--accent-2); }
 .beat-dot.on[data-level='0'] span { background: var(--surface-3); box-shadow: none; }
-.beat-dot.hit span { animation: hit 0.18s ease-out; }
+.beat-dot.hit-a span { animation: hit 0.18s ease-out; }
+.beat-dot.hit-b span { animation: hit2 0.18s ease-out; }
 @keyframes hit { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes hit2 { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
 
 .tempo-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .tempo-row .bpm-slider { flex: 1; }
@@ -614,6 +619,10 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
   .tabs { justify-self: stretch; justify-content: flex-start; }
   .tabs button { padding: 7px 12px; flex: 1 0 auto; }
   .tabs .long { display: none; }
+  /* Blur and fixed backgrounds repaint large areas; on phones that can starve audio. */
+  body { background-attachment: scroll; }
+  .topbar { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--bg); }
+  .beat-dot.on span, .beat-dot.on[data-level='2'] span, .beat-dot.on[data-level='1'] span { box-shadow: none; }
   .mobile-only { display: flex !important; }
   main { padding: 14px 16px 4px; }
   .card { padding: 14px; border-radius: 14px; }

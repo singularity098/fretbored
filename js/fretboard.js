@@ -250,11 +250,13 @@
     // Briefly highlight every position of an exact MIDI note.
     flash(midi, ms) {
       const els = this.host.querySelectorAll(`.note[data-midi="${midi}"]`);
+      // Alternate two identical animations so a repeat flash restarts without a forced layout.
+      this.flashes = (this.flashes || 0) + 1;
+      const cls = this.flashes % 2 ? 'playing-a' : 'playing-b';
       els.forEach((el) => {
-        el.classList.remove('playing');
-        void el.getBoundingClientRect();
-        el.classList.add('playing');
-        setTimeout(() => el.classList.remove('playing'), ms || 260);
+        el.classList.remove('playing-a', 'playing-b');
+        el.classList.add(cls);
+        setTimeout(() => el.classList.remove(cls), ms || 260);
       });
     }
 
