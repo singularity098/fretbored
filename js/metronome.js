@@ -11,7 +11,11 @@
 
   const MIN_BPM = 20;
   const MAX_BPM = 300;
-  const LOOKAHEAD = 0.15; // seconds of audio scheduled ahead
+  // Seconds of audio scheduled ahead. Generous, because on phones the audio clock can jump in
+  // large steps and the page can be busy redrawing after a tap; a click that is only scheduled
+  // once its time has passed would play late. Changes still apply from the next beat.
+  const MIN_LOOKAHEAD = 0.3;
+  const LATE_TOLERANCE = 0.004; // a click this late is dropped rather than played out of time
   const TICK_MS = 25;
 
   const SUBDIVISIONS = [
@@ -132,6 +136,7 @@
       eng.bar = 0;
       eng.count = 0;
       eng.barsSinceStep = 0;
+      eng.rampFrom = 0;
       eng.liveBpm = trainerOn() ? clampBpm(m.trainer.start) : m.bpm;
       eng.nextTime = ctx.currentTime + 0.1;
       eng.startTime = eng.nextTime;
@@ -171,15 +176,30 @@
       resetVisuals();
     }
 
+    function lookahead(ctx) {
+      return Math.max(MIN_LOOKAHEAD, (ctx.baseLatency || 0) + (ctx.outputLatency || 0) + 0.2);
+    }
+
     function schedule() {
       if (!eng.running) return;
       const ctx = FS.audio.ctx();
-      while (eng.nextTime < ctx.currentTime + LOOKAHEAD) {
+      const now = ctx.currentTime;
+      // If we fell behind (e.g. the tab was suspended), skip the missed beats silently and
+      // stay on the grid instead of firing a burst of overdue clicks.
+      while (eng.nextTime < now - LATE_TOLERANCE) advance();
+      const horizon = now + lookahead(ctx);
+      while (eng.nextTime < horizon) {
         scheduleBeat(eng.nextTime, 60 / eng.liveBpm);
         advance();
       }
       const cutoff = ctx.currentTime - 1;
       if (eng.sources.length > 64) eng.sources = eng.sources.filter((s) => s.time > cutoff);
+    }
+
+    function click(name, time, gain) {
+      if (time < FS.audio.ctx().currentTime - LATE_TOLERANCE) return; // never play out of time
+      const src = FS.audio.playSample(name, time, gain);
+      if (src) eng.sources.push({ src, time });
     }
 
     function scheduleBeat(time, dur) {
@@ -189,16 +209,9 @@
       const silent = m.gap.on && m.gap.mute > 0 && eng.bar % cycle >= Math.max(1, m.gap.play);
       const lvl = m.levels[eng.beat] === undefined ? 2 : m.levels[eng.beat];
       if (!silent) {
-        if (lvl > 0) {
-          const src = FS.audio.playSample(lvl === 3 ? set.accent : set.beat, time, LEVEL_GAIN[lvl] * vol);
-          if (src) eng.sources.push({ src, time });
-        }
+        if (lvl > 0) click(lvl === 3 ? set.accent : set.beat, time, LEVEL_GAIN[lvl] * vol);
         const offs = SUB_BY_ID[m.subdivision];
-        for (let i = 1; i < offs.length; i++) {
-          const t = time + offs[i] * dur;
-          const src = FS.audio.playSample(set.sub, t, m.subVolume * vol * 0.75);
-          if (src) eng.sources.push({ src, time: t });
-        }
+        for (let i = 1; i < offs.length; i++) click(set.sub, time + offs[i] * dur, m.subVolume * vol * 0.75);
       }
       eng.queue.push({ time, dur, beat: eng.beat, bar: eng.bar, n: eng.count, silent, lvl, bpm: eng.liveBpm });
     }
@@ -222,7 +235,7 @@
       }
       if (m.trainer.mode === 'ramp') {
         const total = Math.max(1, m.trainer.rampBars) * m.beats;
-        const p = Math.min(1, eng.count / total);
+        const p = Math.min(1, (eng.count - eng.rampFrom) / total);
         eng.liveBpm = m.trainer.start + (m.trainer.end - m.trainer.start) * p;
       } else if (!trainerOn()) {
         eng.liveBpm = m.bpm;
@@ -468,14 +481,17 @@
       }
     }
 
+    // Switching trainer mode while running restarts the trainer from the next beat without
+    // stopping the click, so there is no gap or doubled click.
     function restartIfRunning() {
-      if (eng.running) {
-        stop();
-        start();
-      }
+      if (!eng.running) return;
+      eng.barsSinceStep = 0;
+      eng.rampFrom = eng.count;
+      eng.liveBpm = trainerOn() ? clampBpm(m.trainer.start) : m.bpm;
     }
 
     function preview() {
+      if (eng.running) return; // you'll hear the new sound on the next beat
       FS.audio.loadSamples().then(() => {
         const ctx = FS.audio.ctx();
         FS.audio.playSample(SOUND_SETS[m.sound].accent, ctx.currentTime + 0.02, m.volume);
