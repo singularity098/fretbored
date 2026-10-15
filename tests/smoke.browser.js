@@ -99,9 +99,14 @@ const check = (label, actual, expected) => {
       check(`${P} theme menu closes`, String(await page.$eval('#theme-menu', (m) => m.hidden)), 'true');
       if (th !== 'dark') await shot(`theme-${th}`);
     }
+    // Note dots take their colours from the app theme (no separate dot-colour picker).
+    const rootFill = () => page.$eval('#panel-scales .fretboard .note.root .dot', (c) => getComputedStyle(c).fill);
+    check(`${P} dark theme root dot colour`, await rootFill(), 'rgb(255, 122, 89)');
+    check(`${P} no dot-colour picker`, String(await page.$$eval('.fb-settings .swatch', (s) => s.length)), '0');
     await page.click('#theme-btn');
     await page.click('#theme-menu [data-id="dracula"]');
     await page.waitForTimeout(300);
+    check(`${P} dracula theme root dot colour`, await rootFill(), 'rgb(255, 121, 198)');
     await page.reload();
     await page.waitForTimeout(300);
     check(`${P} theme remembered`, await page.$eval('html', (e) => e.dataset.theme), 'dracula');

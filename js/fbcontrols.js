@@ -52,23 +52,6 @@
       woodSeg.append(h('button', { dataset: { v }, onclick: () => { fb().wood = v; changed(); } }, label));
     }
 
-    const swatches = h('div', { class: 'swatches', role: 'group', 'aria-label': 'Dot colors' });
-    for (const [id, t] of Object.entries(FS.DOT_THEMES)) {
-      const bg = t.spectrum
-        ? 'conic-gradient(from 0deg, hsl(10 78% 62%), hsl(130 78% 62%), hsl(250 78% 62%), hsl(10 78% 62%))'
-        : `linear-gradient(135deg, ${t.root} 0 50%, ${t.note} 50% 100%)`;
-      swatches.append(
-        h('button', {
-          class: 'swatch',
-          title: t.name,
-          'aria-label': `${t.name} dot colors`,
-          dataset: { v: id },
-          style: `background:${bg}`,
-          onclick: () => { fb().dots = id; changed(); },
-        })
-      );
-    }
-
     const lefty = h('input', { type: 'checkbox', role: 'switch' });
     lefty.addEventListener('change', () => {
       fb().lefty = lefty.checked;
@@ -83,7 +66,7 @@
     const details = h('details', { class: 'fb-settings' },
       h('summary', null,
         h('span', { class: 'fb-settings-title' }, 'Fretboard settings'),
-        h('span', { class: 'fb-settings-hint' }, 'strings, tuning, frets, wood, dots…'),
+        h('span', { class: 'fb-settings-hint' }, 'strings, tuning, frets, wood, labels…'),
         tuningLabel),
       controls);
     details.open = !!fb().controlsOpen;
@@ -104,7 +87,6 @@
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Labels'), labelSeg),
       h('div', { class: 'field mobile-only' }, h('span', { class: 'field-label' }, 'Layout'), layoutSeg),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Wood'), woodSeg),
-      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Dots'), swatches),
       h('label', { class: 'field switch-field' }, h('span', { class: 'field-label' }, 'Left-handed'), h('span', { class: 'switch' }, lefty, h('span', { class: 'slider' })))
     );
 
@@ -129,7 +111,6 @@
       labelSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.labels));
       layoutSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.orientation));
       woodSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.wood));
-      swatches.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.dots));
       lefty.checked = !!s.lefty;
       tuningLabel.textContent = `${cur.name} · ${FS.tuningLabel(cur)}`;
     }

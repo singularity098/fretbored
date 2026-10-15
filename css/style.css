@@ -25,6 +25,10 @@
   --focus: 0 0 0 3px rgba(124, 108, 255, 0.55);
   --on-accent: #ffffff; /* text on accent-filled buttons */
   color-scheme: dark;
+  --dot-root: #ff7a59; /* fretboard note dots: root and other notes, with their label colours */
+  --dot-root-ink: #ffffff;
+  --dot-note: #7c6cff;
+  --dot-note-ink: #ffffff;
 }
 
 :root[data-theme='light'] {
@@ -47,6 +51,10 @@
   --fretnum: #808aa0;
   --focus: 0 0 0 3px rgba(37, 99, 235, 0.45);
   color-scheme: light;
+  --dot-root: #e11d48;
+  --dot-root-ink: #ffffff;
+  --dot-note: #2563eb;
+  --dot-note-ink: #ffffff;
 }
 
 /* Pure black for OLED screens: near-black boxes, no glows or shadows, neon cyan → blue accents. */
@@ -70,6 +78,10 @@
   --shadow: none;
   --fretnum: #6c707b;
   --focus: 0 0 0 3px rgba(34, 211, 238, 0.5);
+  --dot-root: #22d3ee;
+  --dot-root-ink: #001318;
+  --dot-note: #3b82f6;
+  --dot-note-ink: #ffffff;
 }
 
 /* Dracula palette (draculatheme.com): pink accent, purple second accent. */
@@ -94,6 +106,10 @@
   --danger: #ff5555;
   --fretnum: #7f8bbd;
   --focus: 0 0 0 3px rgba(189, 147, 249, 0.6);
+  --dot-root: #ff79c6;
+  --dot-root-ink: #282a36;
+  --dot-note: #8be9fd;
+  --dot-note-ink: #282a36;
 }
 
 /* Solarized dark (ethanschoonover.com/solarized): yellow → orange accents. */
@@ -118,6 +134,10 @@
   --danger: #dc322f;
   --fretnum: #6f8a91;
   --focus: 0 0 0 3px rgba(108, 113, 196, 0.6);
+  --dot-root: #cb4b16;
+  --dot-root-ink: #fdf6e3;
+  --dot-note: #268bd2;
+  --dot-note-ink: #fdf6e3;
 }
 
 /* Tokyo Night (night variant): deep navy, blue → cyan accents. */
@@ -142,6 +162,10 @@
   --danger: #f7768e;
   --fretnum: #737aa2;
   --focus: 0 0 0 3px rgba(122, 162, 247, 0.5);
+  --dot-root: #ff9e64;
+  --dot-root-ink: #1a1b26;
+  --dot-note: #7aa2f7;
+  --dot-note-ink: #1a1b26;
 }
 
 /* Catppuccin Latte (light): mauve → pink accents. */
@@ -168,6 +192,10 @@
   --shadow: 0 8px 24px rgba(76, 79, 105, 0.1);
   --focus: 0 0 0 3px rgba(136, 57, 239, 0.4);
   color-scheme: light;
+  --dot-root: #8839ef;
+  --dot-root-ink: #ffffff;
+  --dot-note: #179299;
+  --dot-note-ink: #ffffff;
 }
 
 /* Catppuccin Frappé (catppuccin.com/palette): green → teal accents. */
@@ -192,6 +220,10 @@
   --danger: #e78284;
   --fretnum: #838ba7;
   --focus: 0 0 0 3px rgba(166, 209, 137, 0.5);
+  --dot-root: #a6d189;
+  --dot-root-ink: #232634;
+  --dot-note: #ca9ee6;
+  --dot-note-ink: #232634;
 }
 
 /* Catppuccin Macchiato (catppuccin.com/palette): peach → red accents. */
@@ -216,6 +248,10 @@
   --danger: #ed8796;
   --fretnum: #8087a2;
   --focus: 0 0 0 3px rgba(245, 169, 127, 0.5);
+  --dot-root: #ed8796;
+  --dot-root-ink: #181926;
+  --dot-note: #eed49f;
+  --dot-note-ink: #181926;
 }
 
 /* Catppuccin Mocha (catppuccin.com/palette): mauve → pink accents. */
@@ -240,6 +276,10 @@
   --danger: #f38ba8;
   --fretnum: #7f849c;
   --focus: 0 0 0 3px rgba(203, 166, 247, 0.5);
+  --dot-root: #cba6f7;
+  --dot-root-ink: #11111b;
+  --dot-note: #94e2d5;
+  --dot-note-ink: #11111b;
 }
 
 * { box-sizing: border-box; }
@@ -632,14 +672,6 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
   padding: 14px 4px; border-bottom: 1px solid var(--border);
 }
 
-.swatches { display: flex; gap: 6px; padding: 4px 0; }
-.swatch {
-  width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; padding: 0;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
-  transition: transform 0.15s;
-}
-.swatch:hover { transform: scale(1.1); }
-.swatch.active { border-color: var(--text); }
 
 .fretboard-scroll {
   overflow-x: auto;

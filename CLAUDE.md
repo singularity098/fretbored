@@ -48,7 +48,7 @@ Script order in `index.html` matters:
 | `js/tunings.js` | `FS.TUNINGS` presets (MIDI notes, lowest string first; `flats` flag for label spelling), string/fret options |
 | `js/store.js` | `FS.settings` (persisted in localStorage key `fretbored:v1`), `FS.save()`, event bus `FS.on/emit`, tuning helpers, `FS.toast`, DOM helper `FS.h(tag, attrs, ...children)` |
 | `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote`, `prepare`), click samples (`loadSamples`, `playSample`, `playBuffer`) |
-| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Arpeggios/Trainer), wood + dot themes, horizontal/vertical layout, tap / long-press / right-click handling. Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f), focus?: {lo, hi} }` — `color` overrides the theme (dark label), `isActive` shades other cells, `focus` (Chords/Arpeggios) crops a vertical board to those frets via the SVG viewBox (`cropRange`) unless `fretboard.wholeNeck`; the toggle button is added after the host |
+| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Arpeggios/Trainer), woods (`FS.WOODS`), horizontal/vertical layout, tap / long-press / right-click handling. Dot colours come from the app theme (see below). Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f), focus?: {lo, hi} }` — `color` overrides the theme (dark label), `isActive` shades other cells, `focus` (Chords/Arpeggios) crops a vertical board to those frets via the SVG viewBox (`cropRange`) unless `fretboard.wholeNeck`; the toggle button is added after the host |
 | `js/fbcontrols.js` | Shared fretboard settings bar (inside a collapsible `details.fb-settings`, open state in `fretboard.controlsOpen`, synced across tabs via the `fbcontrols:open` event) + custom tuning editor dialog |
 | `js/nowbar.js` | Pinned "now viewing" bar shown while a tab's title is out of view — at the top when scrolled past it, at the bottom while it is still below the screen |
 | `js/scales.js`, `chords.js`, `arpeggios.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
@@ -68,7 +68,7 @@ Settings: add new keys to `DEFAULTS` in `store.js`. `merge()` drops unknown keys
 values whose type doesn't match the default (a default of `null` accepts anything). A nested
 object default only keeps the keys it lists, so free-form maps (e.g. `trainer.stats`) must default
 to `null` and be initialised in code. To change a default for people who already have the old one
-saved, bump a version key and migrate once in `store.js` (see `fretboard.themeVersion`).
+saved, bump a version key and migrate once in `store.js` (see `trainer.version`).
 
 The app icon (`assets/icon.svg`) uses the same Circle colours. It is duplicated inline in
 `index.html` as the favicon data URI and the header `.logo` SVG, and as `assets/icon-maskable.svg`
@@ -82,8 +82,12 @@ palettes; Catppuccin maps mantle → `--bg`, base → `--surface`, surface0/1 �
 needs both, plus the smoke test's theme list. Keep the palette selectors scoped to `:root` — an
 unscoped `[data-theme='light']` also matched a menu button carrying that attribute.
 
-Dot themes live in `FS.DOT_THEMES` (`fretboard.js`). Default is `circle` — the owner asked for the
-circle-of-fifths colours (coral root, violet notes, white labels) everywhere a fretboard appears.
+Note dot colours belong to the app theme: `--dot-root`, `--dot-note` and their label colours
+`--dot-root-ink` / `--dot-note-ink` in each `:root[data-theme]` block (the fretboard and the chord
+diagram use them via `style="fill:var(--…)"`). The owner removed the separate dot-colour picker.
+Dark keeps the circle-of-fifths colours (coral root, violet notes, white labels); each other theme
+has its own pair from its palette — keep pairs distinct between themes and root vs notes clearly
+different. A note's `color` (trainer feedback) still overrides the theme.
 
 ### Music-theory conventions
 

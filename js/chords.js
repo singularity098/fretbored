@@ -311,7 +311,6 @@
       const W = left + sw * (n - 1) + 24;
       const H = topY + fh * rows + 14;
       const colX = (s) => left + sw * (lefty ? n - 1 - s : s);
-      const theme = FS.DOT_THEMES[FS.settings.fretboard.dots] || FS.DOT_THEMES.circle;
       const p = [`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Chord diagram">`];
       if (start === 1) p.push(`<rect x="${left - 1}" y="${topY - 4}" width="${sw * (n - 1) + 2}" height="5" rx="1" class="cb-nut"/>`);
       else p.push(`<text class="cb-fr" x="${left - 10}" y="${topY + fh / 2 + 4}" text-anchor="end">${start}fr</text>`);
@@ -325,8 +324,8 @@
           const row = f - start;
           if (row < 0 || row >= rows) return;
           const pc = t.mod12(tuning[s] + f);
-          const fill = !unknown && pc === st.root ? (theme.spectrum ? 'var(--accent)' : theme.root) : theme.note;
-          p.push(`<circle cx="${x}" cy="${topY + row * fh + fh / 2}" r="${sw * 0.38}" fill="${fill}"/>`);
+          const fill = !unknown && pc === st.root ? 'var(--dot-root)' : 'var(--dot-note)';
+          p.push(`<circle cx="${x}" cy="${topY + row * fh + fh / 2}" r="${sw * 0.38}" style="fill:${fill}"/>`);
         }
       });
       p.push('</svg>');

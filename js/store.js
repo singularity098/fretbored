@@ -12,8 +12,6 @@
       tuning: 'std6',
       frets: 22,
       labels: 'notes',
-      dots: 'circle',
-      themeVersion: 0, // bumped when the default dot theme changes, to migrate saved defaults
       wood: 'ebony',
       orientation: 'horizontal',
       controlsOpen: false, // fretboard settings section expanded (shared by all tabs)
@@ -85,11 +83,6 @@
     FS.settings.trainer.from = 0;
     FS.settings.trainer.to = 12;
     FS.settings.trainer.version = 1;
-  }
-  // v1: the circle-of-fifths colours became the default dot theme; move people off the old default once.
-  if (FS.settings.fretboard.themeVersion < 1) {
-    if (FS.settings.fretboard.dots === 'aurora') FS.settings.fretboard.dots = 'circle';
-    FS.settings.fretboard.themeVersion = 1;
   }
   FS.DEFAULTS = DEFAULTS;
 

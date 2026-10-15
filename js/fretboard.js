@@ -9,19 +9,8 @@
     ['maple', 'Maple'],
   ];
 
-  // text: label colour on the dot (defaults to dark ink).
-  FS.DOT_THEMES = {
-    circle: { name: 'Circle', root: '#ff7a59', note: '#7c6cff', text: '#ffffff' }, // the circle-of-fifths colours
-    aurora: { name: 'Aurora', root: '#ff7a59', note: '#3dd6c3' },
-    amber: { name: 'Amber', root: '#ffb627', note: '#8fa2ff' },
-    neon: { name: 'Neon', root: '#ff3d8b', note: '#2de2ff' },
-    forest: { name: 'Forest', root: '#f4d35e', note: '#5fbf8f' },
-    ivory: { name: 'Ivory', root: '#ffffff', note: '#9aa5b8' },
-    spectrum: { name: 'Spectrum', root: '#ffffff', note: '#9aa5b8', spectrum: true },
-  };
-
-  // One hue per interval for the Spectrum theme.
-  const spectrumColor = (iv) => `hsl(${(iv * 30 + 10) % 360} 78% 62%)`;
+  // Note dot colours come from the app colour theme: --dot-root / --dot-note (+ -ink for the
+  // label) are set per theme in style.css.
 
   const INLAYS = [3, 5, 7, 9, 15, 17, 19, 21];
   const DOUBLE_INLAYS = [12, 24];
@@ -129,7 +118,6 @@
       const L = this.layout();
       this.L = L;
       const fb = FS.settings.fretboard;
-      const theme = FS.DOT_THEMES[fb.dots] || FS.DOT_THEMES.circle;
       const { n, frets, height, width, fretX, pt, rect, cellU, stringV, gap, openW, vertical } = L;
       const vLo = L.vPadLo; // board edges across the strings
       const vHi = vLo + n * gap;
@@ -241,12 +229,9 @@
         keys.add(key);
         const enter = this.prevKeys.has(key) ? '' : ' enter';
         const c = xy(cellU(note.f), stringV(note.s));
-        let fill;
-        let ink = theme.text || '#0d1017';
+        let fill = note.kind === 'root' ? 'var(--dot-root)' : 'var(--dot-note)';
+        let ink = note.kind === 'root' ? 'var(--dot-root-ink)' : 'var(--dot-note-ink)';
         if (note.color) (fill = note.color), (ink = '#0d1017');
-        else if (note.kind === 'root') fill = theme.root;
-        else if (theme.spectrum && note.iv !== undefined) fill = spectrumColor(note.iv);
-        else fill = theme.note;
         const label = FS.theory.pretty(note.label || '');
         const fs = (label.length >= 4 ? 9 : label.length === 3 ? 10.5 : 12.5) * (r / 14);
         const cls = `note ${note.kind}${enter}`;

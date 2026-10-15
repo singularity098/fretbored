@@ -13,7 +13,7 @@
 - Wherever a fretboard appears (Scales, Chords, Arpeggios, Trainer) it is the first section on the tab; likewise the circle of fifths wheel is the first section of its tab
 - On the Scales, Chords and Arpeggios tabs, a slim bar shows the current scale, chord or arpeggio (name, notes, position) with a play button and a button that jumps to the controls whenever the title is out of view: pinned under the tabs after scrolling past the title, or at the bottom of the screen while the title is still below (the fretboard comes first)
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
-- For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from
+- For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24); the note dot colours come from the app colour theme
   - The settings sit in a collapsible "Fretboard settings" section on every tab with a fretboard (Scales, Chords, Arpeggios, Trainer); its header shows the current tuning. It starts folded; opening or closing it applies to all tabs and is remembered
   - Preset tunings per string count, including drop tunings for 7-string (Drop A, Drop G♯, Drop G) and 8-string (Drop E, Drop E♭, Drop D) guitars
   - Fully custom tuning editor: set each string's note and octave, name it, save it; custom tunings can be edited or deleted later
@@ -23,7 +23,7 @@
   - Layout (phones): Sideways or Vertical — vertical shows the nut at the top and the low string on the left, like a chord chart
   - On Chords and Arpeggios the vertical fretboard shows only the frets around the current shape (from the nut when the shape is near it, at least five frets, one spare fret below for editing); a "Show the whole neck" button below it brings back the full neck (remembered)
   - Fretboard wood: Ebony (default), Rosewood or Maple
-  - Dot color themes: Circle (default — the circle-of-fifths colours: coral root, violet notes, white labels), Aurora, Amber, Neon, Forest, Ivory, Spectrum (one color per interval)
+  - Note dot colours follow the app colour theme (the separate dot-colour picker was removed at the owner's request). Root / other notes: Dark coral / violet (the circle-of-fifths colours), Light rose / blue, AMOLED cyan / electric blue, Dracula pink / cyan, Solarized orange / blue, Tokyo Night orange / blue, Catppuccin Latte mauve / teal, Frappé green / mauve, Macchiato red / yellow, Mocha mauve / teal
 ##### Guitar Scales Tab
 - User may select any key desired, and they display in the fretboard with root note highlighted
 - The user may select scales from 3 categories: Common, Rare, Exotic
