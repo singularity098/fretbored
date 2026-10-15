@@ -1,5 +1,5 @@
 ### Fretbored
-- Beautiful interface with dark theme by default. Other app colour themes from the palette button in the top bar: Light, AMOLED Black (pure black for OLED screens), Charcoal (neutral greys), Dracula and Solarized (dark). The choice is remembered
+- Beautiful interface with dark theme by default. Other app colour themes from the palette button in the top bar: Light (blue → indigo accents), AMOLED Black (pure black page, near-black boxes, neon cyan → blue accents), Charcoal (neutral greys, emerald → teal), Dracula (pink → purple) and Solarized dark (yellow → orange). Dark keeps the coral → violet accents. Each theme has its own accent colours so active buttons look different per theme. The choice is remembered
 - Works in a web browser with no dependencies
   - Plain HTML, CSS and JavaScript — no build step, no libraries, no network requests
   - Works when `index.html` is opened directly from disk (offline); the metronome sounds are embedded in the page

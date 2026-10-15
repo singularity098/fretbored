@@ -9,11 +9,11 @@
   // card, accent — also used for the browser's theme-color.
   const THEMES = [
     { id: 'dark', name: 'Dark', sw: ['#0c0f14', '#1a2130', '#ff7a59'] },
-    { id: 'light', name: 'Light', sw: ['#f5f6fa', '#ffffff', '#ff7a59'] },
-    { id: 'amoled', name: 'AMOLED Black', sw: ['#000000', '#121212', '#ff7a59'] },
-    { id: 'charcoal', name: 'Charcoal', sw: ['#1c1c1e', '#2c2c30', '#ff7a59'] },
+    { id: 'light', name: 'Light', sw: ['#f5f6fa', '#ffffff', '#2563eb'] },
+    { id: 'amoled', name: 'AMOLED Black', sw: ['#000000', '#0b0b0c', '#22d3ee'] },
+    { id: 'charcoal', name: 'Charcoal', sw: ['#1c1c1e', '#2c2c30', '#34d399'] },
     { id: 'dracula', name: 'Dracula', sw: ['#21222c', '#44475a', '#ff79c6'] },
-    { id: 'solarized', name: 'Solarized', sw: ['#002b36', '#073642', '#cb4b16'] },
+    { id: 'solarized', name: 'Solarized', sw: ['#002b36', '#073642', '#b58900'] },
   ];
   FS.THEMES = THEMES;
 
