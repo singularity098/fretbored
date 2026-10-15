@@ -72,29 +72,6 @@
   --focus: 0 0 0 3px rgba(34, 211, 238, 0.5);
 }
 
-/* Neutral greys, no blue tint, emerald → teal accents. */
-:root[data-theme='charcoal'] {
-  --bg: #1c1c1e;
-  --bg-glow-1: rgba(255, 255, 255, 0.025);
-  --bg-glow-2: rgba(52, 211, 153, 0.04);
-  --surface: #242427;
-  --surface-2: #2c2c30;
-  --surface-3: #37373c;
-  --border: rgba(255, 255, 255, 0.07);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --text: #ececec;
-  --text-2: #b1b1b7;
-  --text-3: #7d7d85;
-  --accent: #34d399;
-  --accent-2: #0d9488;
-  --accent-soft: rgba(52, 211, 153, 0.13);
-  --accent-text: #6ee7b7;
-  --on-accent: #06221a;
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  --fretnum: #7d7d85;
-  --focus: 0 0 0 3px rgba(52, 211, 153, 0.45);
-}
-
 /* Dracula palette (draculatheme.com): pink accent, purple second accent. */
 :root[data-theme='dracula'] {
   --bg: #21222c;
@@ -141,32 +118,6 @@
   --danger: #dc322f;
   --fretnum: #6f8a91;
   --focus: 0 0 0 3px rgba(108, 113, 196, 0.6);
-}
-
-/* Solarized light: base3/base2 paper tones, base01 text, blue → cyan accents. */
-:root[data-theme='solarizedlight'] {
-  --bg: #eee8d5;
-  --bg-glow-1: rgba(38, 139, 210, 0.06);
-  --bg-glow-2: rgba(42, 161, 152, 0.06);
-  --surface: #fdf6e3;
-  --surface-2: #f5efdb;
-  --surface-3: #e9e2cb;
-  --border: rgba(88, 110, 117, 0.14);
-  --border-strong: rgba(88, 110, 117, 0.26);
-  --text: #073642;
-  --text-2: #586e75;
-  --text-3: #839496;
-  --accent: #268bd2;
-  --accent-2: #2aa198;
-  --accent-soft: rgba(38, 139, 210, 0.12);
-  --accent-text: #1f6fa8;
-  --on-accent: #ffffff;
-  --good: #859900;
-  --danger: #dc322f;
-  --shadow: 0 8px 24px rgba(88, 110, 117, 0.12);
-  --fretnum: #839496;
-  --focus: 0 0 0 3px rgba(38, 139, 210, 0.4);
-  color-scheme: light;
 }
 
 /* Tokyo Night (night variant): deep navy, blue → cyan accents. */
