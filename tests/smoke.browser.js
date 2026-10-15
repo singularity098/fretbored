@@ -329,8 +329,24 @@ const check = (label, actual, expected) => {
     await page.click('#panel-metronome .pill:has-text("Sixteenths")');
     await page.click('.start-btn');
     await page.waitForTimeout(1300);
-    await page.click('.start-btn');
+    // ± while running: the display must go straight to the new tempo, never flash the old one back.
     const beatGaps = await page.evaluate(() => window.__beats.slice(1).map((t, i) => Math.round((t - window.__beats[i]) * 1000)));
+    await page.evaluate(() => {
+      window.__shown = [];
+      const el = document.querySelector('.bpm-num');
+      new MutationObserver(() => window.__shown.push(+el.textContent)).observe(el, { childList: true, characterData: true, subtree: true });
+    });
+    const plus1 = page.locator('#panel-metronome button[aria-label="Increase tempo by 1"]');
+    for (let k = 0; k < 6; k++) {
+      await plus1.dispatchEvent('pointerdown');
+      await plus1.dispatchEvent('pointerup');
+      await page.waitForTimeout(170);
+    }
+    await page.waitForTimeout(600);
+    const shown = await page.evaluate(() => window.__shown);
+    check(`${P} metronome: ± shows only the new tempo`, String(shown.every((v, i) => i === 0 || v >= shown[i - 1]) && shown[shown.length - 1] === 126) + ` (${shown.join(' ')})`, /^true /);
+    await page.click('.start-btn');
+    await page.evaluate(() => { FS.settings.metronome.bpm = 120; FS.save(); });
     check(`${P} metronome: beats 500 ms apart at 120 BPM`, String([...new Set(beatGaps)]), '500');
     await shot('metronome');
 

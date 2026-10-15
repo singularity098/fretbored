@@ -524,7 +524,8 @@
     /* ---- Rendering ---- */
 
     function renderTempo() {
-      const shown = eng.running ? eng.liveBpm : trainerOn() ? m.trainer.start : m.bpm;
+      // Trainer running: the tempo being heard (scheduling runs ahead of the audio).
+      const shown = !trainerOn() ? m.bpm : eng.running ? (eng.current ? eng.current.bpm : eng.liveBpm) : m.trainer.start;
       setText(bpmNum, Math.round(shown));
       setText(bpmMark, tempoMarking(shown));
       slider.value = m.bpm;
@@ -646,8 +647,13 @@
         if (changed) {
           [...dots.children].forEach((d, i) => d.classList.toggle('on', i === c.beat));
           sweep.classList.toggle('silent', c.silent);
-          setText(bpmNum, Math.round(c.bpm));
-          setText(bpmMark, tempoMarking(c.bpm));
+          // Only the tempo trainer changes tempo by itself; follow it as the beats are heard.
+          // Otherwise the display shows the chosen tempo — beats queued before a ± tap still
+          // carry the old tempo and would flash it back for a moment.
+          if (trainerOn()) {
+            setText(bpmNum, Math.round(c.bpm));
+            setText(bpmMark, tempoMarking(c.bpm));
+          }
           // Alternate between two identical animations to restart the pulse without
           // forcing a layout on every beat.
           const pulse = dots.children[c.beat];
