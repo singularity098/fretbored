@@ -4,6 +4,7 @@
   - Plain HTML, CSS and JavaScript — no build step, no libraries, no network requests
   - Works when `index.html` is opened directly from disk (offline); the metronome sounds are embedded in the page
   - Hosted on GitHub Pages
+  - Installable as an app from the hosted site (PWA): own icon (incl. Android maskable icon), full screen, works offline; an Install button appears in the top bar when the browser offers installation; updates are fetched in the background and used on the next launch
 - Works both in desktop browsers and mobile
   - On narrow screens the fretboard scrolls sideways by default; a Layout toggle (phones only) switches it to a vertical fretboard that scrolls down the page
 - Link to github repository at the top right corner

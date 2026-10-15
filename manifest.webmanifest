@@ -1,0 +1,19 @@
+{
+  "id": "./",
+  "name": "Fretbored",
+  "short_name": "Fretbored",
+  "description": "Guitar scales, chords, arpeggios, a fretboard trainer, circle of fifths, metronome and tuner.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0f14",
+  "theme_color": "#0c0f14",
+  "categories": ["music", "education"],
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

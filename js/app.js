@@ -38,8 +38,40 @@
     if (location.hash !== `#${tab}`) history.replaceState(null, '', `#${tab}`);
   };
 
+  /* ---- Installable app (PWA): manifest, offline service worker, install button ---- */
+  function setupPwa() {
+    if (!/^https?:$/.test(location.protocol)) return; // nothing to install from file://
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = 'manifest.webmanifest';
+    document.head.append(link);
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+    // Chrome-family browsers offer an install prompt; show our button only when they do.
+    const btn = document.getElementById('install-app');
+    let deferred = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferred = e;
+      btn.hidden = false;
+    });
+    btn.addEventListener('click', async () => {
+      if (!deferred) return;
+      deferred.prompt();
+      await deferred.userChoice.catch(() => null);
+      deferred = null;
+      btn.hidden = true;
+    });
+    window.addEventListener('appinstalled', () => {
+      btn.hidden = true;
+      FS.toast('Fretbored installed — find it on your home screen');
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
+    setupPwa();
 
     document.querySelectorAll('[role="tab"]').forEach((btn) => {
       btn.addEventListener('click', () => FS.showTab(btn.dataset.tab));

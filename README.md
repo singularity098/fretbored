@@ -17,6 +17,18 @@ Open `index.html` in a browser — that's it. It works offline from disk; everyt
 
 To serve it locally instead: `npx http-server .` (or any static server).
 
+## Install it as an app
+
+On the hosted site Fretbored can be installed like an app — its own icon, full screen, works offline:
+
+- **Android, Chrome/Brave/Edge:** tap **Install** in the top bar (or the browser menu → *Install app*).
+- **Android, Firefox:** browser menu (⋮) → *Install* / *Add to Home screen*.
+- **iPhone/iPad, Safari:** Share → *Add to Home Screen*.
+- **Desktop Chrome/Edge:** the install icon in the address bar, or **Install** in the top bar.
+
+Updates install themselves: each launch quietly downloads the latest version, which is used the next
+time you open the app.
+
 ## Hosting on GitHub Pages
 
 The site is static, so GitHub Pages can serve it straight from the repository:
@@ -35,6 +47,8 @@ Live site: **https://singularity098.github.io/fretbored/**
 - `node tests/theory.test.js` — tests for spelling, scale/chord matching and voicing generation.
 - `node tests/pitch.test.js` — pitch detector accuracy tests.
 - `node tests/smoke.browser.js` — headless-Chromium smoke test of every tab (desktop + phone); needs Playwright.
+- `node tests/pwa.browser.js` — installable-app test (installability, offline, updates) over a local server.
+- `node tools/make-icons.js` — re-renders the PNG app icons from `assets/icon.svg` / `assets/icon-maskable.svg`.
 - `CLAUDE.md` — architecture, conventions and hard-won browser notes for AI-assisted development.
 - `node tools/embed-sounds.js` — regenerates `js/sounds.js` after changing files in `assets/sounds/`.
 

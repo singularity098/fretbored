@@ -153,6 +153,8 @@ button { cursor: pointer; }
 }
 .icon-btn:hover { color: var(--text); border-color: var(--border-strong); background: var(--surface-2); }
 .inline .icon-btn { width: 34px; height: 34px; border-radius: 10px; }
+.install-btn { padding: 7px 12px; }
+@media (max-width: 760px) { .install-btn span { display: none; } }
 .i-sun { display: none; }
 [data-theme='light'] .i-sun { display: block; }
 [data-theme='light'] .i-moon { display: none; }

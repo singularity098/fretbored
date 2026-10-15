@@ -23,6 +23,19 @@ with user-visible changes — the owner asked for that.
 - Dark theme by default (light via the header toggle); must work on desktop and phones.
 - Metronome timing must be sample-accurate (see Audio below).
 
+## Installable app (PWA)
+
+- `manifest.webmanifest` + `sw.js` (service worker) at the repo root. `app.js` links the manifest and
+  registers the worker only on http(s) — on `file://` browsers refuse both (and log errors).
+- `sw.js` is stale-while-revalidate: answers from cache, refreshes in the background, so a deploy
+  reaches users on their **second** launch. No version number to bump. Its `FILES` list must
+  include every script/stylesheet in `index.html` — when adding a JS file, add it there too
+  (`tests/pwa.browser.js` fails otherwise).
+- Icons: `assets/icon.svg` (any), `assets/icon-maskable.svg` (artwork inside the 80% safe zone),
+  PNGs in `assets/icons/` rendered by `node tools/make-icons.js`. Regenerate after icon changes.
+- Install button (`#install-app`) shows only when Chrome-family browsers fire `beforeinstallprompt`;
+  Firefox/Safari install from their menus (README explains).
+
 ## Architecture
 
 Everything hangs off one global namespace, `window.FS`. Each file is an IIFE that adds to it.
@@ -58,7 +71,8 @@ to `null` and be initialised in code. To change a default for people who already
 saved, bump a version key and migrate once in `store.js` (see `fretboard.themeVersion`).
 
 The app icon (`assets/icon.svg`) uses the same Circle colours. It is duplicated inline in
-`index.html` as the favicon data URI and the header `.logo` SVG — keep all three in sync.
+`index.html` as the favicon data URI and the header `.logo` SVG, and as `assets/icon-maskable.svg`
++ the PNGs in `assets/icons/` — keep them all in sync.
 
 Dot themes live in `FS.DOT_THEMES` (`fretboard.js`). Default is `circle` — the owner asked for the
 circle-of-fifths colours (coral root, violet notes, white labels) everywhere a fretboard appears.
@@ -112,9 +126,12 @@ circle-of-fifths colours (coral root, violet notes, white labels) everywhere a f
 node tests/theory.test.js      # spelling, matching, voicings
 node tests/pitch.test.js       # tuner pitch-detector accuracy
 node tests/smoke.browser.js [screenshot-dir]   # headless Chromium, desktop + phone, every tab
+node tests/pwa.browser.js      # installable app: installability, precache list, offline, updates
 ```
 
-- Run all three before pushing; also `node --check js/*.js`.
+- Run all four before pushing; also `node --check js/*.js sw.js`.
+- The PWA test needs a non-incognito profile (`launchPersistentContext`) — Chrome reports
+  `in-incognito` and never allows installs in Playwright's default context.
 - The smoke test drives the app from `file://`, fakes the microphone with a generated A2 tone
   (Chrome `--use-file-for-fake-audio-capture`), and checks metronome beat spacing by hooking
   `FS.audio.playBuffer`. Extend it when adding features.
