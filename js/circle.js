@@ -98,8 +98,11 @@
     }
     svg.append(sigRing);
 
-    const minorModes = [1, 2, 5, 6];
-    const majors = ring('major', 196, 268, MAJ, 26, (k) => set((k * 7) % 12, minorModes.includes(st.mode) ? 0 : st.mode));
+    // Each ring keeps the current mode only if that mode's tonic chord lives on the ring, so the
+    // highlight lands on the segment that was clicked (Locrian's tonic is diminished: inner ring).
+    const majorModes = [0, 3, 4]; // Ionian, Lydian, Mixolydian
+    const minorModes = [1, 2, 5]; // Dorian, Phrygian, Aeolian
+    const majors = ring('major', 196, 268, MAJ, 26, (k) => set((k * 7) % 12, majorModes.includes(st.mode) ? st.mode : 0));
     const minors = ring('minor', 140, 194, MIN, 17, (k) => set(((k * 7) % 12 + 9) % 12, minorModes.includes(st.mode) ? st.mode : 5));
     const dims = ring('dim', 104, 138, DIM, 13, (k) => set(((k * 7) % 12 + 11) % 12, 6));
 

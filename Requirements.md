@@ -61,6 +61,7 @@
   - The seven diatonic chords are highlighted on the circle with Roman numerals relative to the tonic
   - Shows the scale's notes, diatonic triads and seventh chords (tap to hear), key signature, relative keys and the mode's character
   - Clicking a segment of the circle selects that key; "Show on fretboard" opens the scale in the Scales tab
+    - The clicked segment becomes the tonic: the outer ring keeps a major-type mode (Ionian, Lydian, Mixolydian, else Ionian), the middle ring a minor-type mode (Dorian, Phrygian, Aeolian, else Aeolian), the inner ring selects Locrian
 ##### Trainer
 - A fretboard trainer game using the shared fretboard (same tunings, strings, frets and display settings as the other tabs)
 - Two games:

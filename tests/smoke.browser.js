@@ -222,6 +222,21 @@ const check = (label, actual, expected) => {
     await page.click('#panel-circle .pill:has-text("Dorian")');
     await page.waitForTimeout(150);
     check(`${P} circle: C Dorian`, await page.textContent('#panel-circle .hero-title'), 'C Dorian');
+    // Clicking a ring puts the tonic on that ring: inner (B°) → middle (Am) must select A minor, not A Locrian.
+    const tonicRing = () => page.$eval('#panel-circle .cof-seg.tonic', (g) => g.parentNode.classList[1]);
+    await page.click('#panel-circle .cof-ring.dim .cof-seg:nth-child(1)');
+    await page.waitForTimeout(100);
+    check(`${P} circle: inner ring → B Locrian`, `${await page.textContent('#panel-circle .hero-title')} on ${await tonicRing()}`, 'B Locrian on dim');
+    await page.click('#panel-circle .cof-ring.minor .cof-seg:nth-child(1)');
+    await page.waitForTimeout(100);
+    check(`${P} circle: then middle ring → A minor`, `${await page.textContent('#panel-circle .hero-title')} on ${await tonicRing()}`, 'A Aeolian (Minor) on minor');
+    await page.click('#panel-circle .pill:has-text("Phrygian")');
+    await page.click('#panel-circle .cof-ring.minor .cof-seg:nth-child(2)');
+    await page.waitForTimeout(100);
+    check(`${P} circle: middle ring keeps a minor mode`, `${await page.textContent('#panel-circle .hero-title')} on ${await tonicRing()}`, 'E Phrygian on minor');
+    await page.click('#panel-circle .cof-ring.major .cof-seg:nth-child(2)');
+    await page.waitForTimeout(100);
+    check(`${P} circle: outer ring → major`, `${await page.textContent('#panel-circle .hero-title')} on ${await tonicRing()}`, 'G Ionian (Major) on major');
     await shot('circle');
 
     // Trainer: name mode scoring, fret range, strings, naturals, find mode, saved progress.
