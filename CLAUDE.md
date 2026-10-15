@@ -53,7 +53,7 @@ Script order in `index.html` matters:
 | `js/nowbar.js` | Pinned "now viewing" bar shown while a tab's title is out of view — at the top when scrolled past it, at the bottom while it is still below the screen |
 | `js/scales.js`, `chords.js`, `arpeggios.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
 | `js/pitch.js` | `FS.pitch` — McLeod pitch detector with FFT autocorrelation (pure, unit-tested) |
-| `js/app.js` | Tabs (`FS.showTab`), theme, startup. Tabs are initialised lazily on first view |
+| `js/app.js` | Tabs (`FS.showTab(tab, from?)`), theme, startup, phone swipe between tabs (`setupSwipe`: ignores swipes starting on sideways-scrolling elements, inputs, dialogs or `[data-noswipe]`). Tabs are initialised lazily on first view |
 | `css/style.css` | All styles; colours are CSS variables on `:root` / `[data-theme='light']` |
 
 Events: `fretboard` (any fretboard setting or tuning changed → re-render), `tab` (tab switched),
@@ -119,6 +119,8 @@ circle-of-fifths colours (coral root, violet notes, white labels) everywhere a f
 - Inline SVGs share one ID space: gradient IDs are per-instance (`fb1wood`, …). A hidden panel
   defining the first copy of an ID breaks the visible one.
 - Use `style="stop-color:var(--x)"`, not `stop-color="var(--x)"` attributes.
+- Horizontal swipes can trigger the browser's history back/forward gesture (seen in headless Chromium,
+  which left the page mid-test); `html { overscroll-behavior-x: none }` stops it.
 
 ## Testing
 
@@ -138,7 +140,7 @@ node tests/pwa.browser.js      # installable app: installability, precache list,
 - In cloud sessions Playwright and Chromium are pre-installed (`/opt/node22/lib/node_modules/playwright`,
   `/opt/pw-browsers/chromium`); never run `playwright install`. Only Chromium is available, so
   Firefox-specific bugs can't be reproduced here — say so and ask the owner to verify on device.
-- For touch long-press tests use CDP `Input.dispatchTouchEvent`, and scroll the target into view
+- For touch long-press and swipe tests use CDP `Input.dispatchTouchEvent`, and scroll the target into view
   first (the fretboard is below the fold on phones).
 - Seeding localStorage in a test: wait for the page's debounced save (150 ms) first, and `reload()`
   afterwards — `goto` to the same page with a different `#hash` does not reload it.

@@ -10,6 +10,7 @@ Guitar scales, chords, circle of fifths and a precise metronome — in the brows
 - **Tuner**: traditional needle and strobe modes, instrument (per-string, using your tuning) or chromatic, adjustable A4 reference and reference tones.
 - **Metronome**: tap tempo, accents, odd-meter grouping, subdivisions, step and gradual tempo trainer, gap trainer. Sample-accurate Web Audio scheduling.
 - Shared fretboard settings: 4–8 strings (guitar and bass), preset and custom tunings, 21/22/24 frets, note or interval labels, dot color themes, ebony/rosewood/maple, left-handed mode, and a sideways or vertical layout on phones (the vertical board on Chords and Arpeggios shows just the current shape, with a button for the whole neck).
+- On phones, swipe the page left or right to move between tabs.
 
 ## Running it
 

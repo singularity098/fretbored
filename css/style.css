@@ -47,7 +47,7 @@
 
 * { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; overscroll-behavior-x: none; } /* sideways swipes change tabs, not browser history */
 
 body {
   margin: 0;
@@ -161,10 +161,15 @@ button { cursor: pointer; }
 
 /* ---------------------------------------------------------------- Layout */
 
-main { max-width: 1320px; margin: 0 auto; padding: 20px 20px 8px; }
+main { max-width: 1320px; margin: 0 auto; padding: 20px 20px 8px; overflow-x: clip; } /* tab slide-in never widens the page */
 
 .panel { display: flex; flex-direction: column; gap: 16px; animation: fade 0.25s ease; }
 
+.panel.slide-next { animation: slideNext 0.22s ease; }
+.panel.slide-prev { animation: slidePrev 0.22s ease; }
+@keyframes slideNext { from { opacity: 0; transform: translateX(36px); } to { opacity: 1; transform: none; } }
+@keyframes slidePrev { from { opacity: 0; transform: translateX(-36px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .panel, .panel.slide-next, .panel.slide-prev { animation: none; } }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 .card {

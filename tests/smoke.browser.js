@@ -102,6 +102,30 @@ const check = (label, actual, expected) => {
     await page.waitForTimeout(200);
     check(`${P} closing on Chords closes on Scales`, String(await fbOpen('scales')), 'false');
 
+    // Phones: swiping the page changes tab; swipes on the sideways-scrolling fretboard don't.
+    if (name === 'phone') {
+      const cdp = await ctx.newCDPSession(page);
+      const swipe = async (sel, dx) => {
+        const r = await page.$eval(sel, (el) => { const b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: Math.max(b.top, 0) + 40 }; });
+        const pt = (x) => [{ x, y: r.y, id: 1 }];
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(r.x - dx / 2) });
+        for (let k = 1; k <= 5; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(r.x - dx / 2 + (dx * k) / 5) });
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+        await page.waitForTimeout(250);
+      };
+      const tab = () => page.$eval('[role="tab"][aria-selected="true"]', (b) => b.dataset.tab);
+      await swipe('#panel-scales .hero', -160);
+      check(`${P} swipe left: next tab`, await tab(), 'chords');
+      await swipe('#panel-chords .hero', 160);
+      check(`${P} swipe right: previous tab`, await tab(), 'scales');
+      await swipe('#panel-scales .hero', 160);
+      check(`${P} swipe right on the first tab stays`, await tab(), 'scales');
+      await swipe('#panel-scales .fretboard-scroll', -160);
+      check(`${P} swipe on the sideways fretboard scrolls it, not the tabs`, await tab(), 'scales');
+      check(`${P} page never scrolls sideways`, String(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)), 'true');
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
+
     // Scales: remove F (low E, fret 1), then make A the root (right-click / Set-root mode).
     await page.click('#panel-scales .cell[data-s="0"][data-f="1"]');
     await page.waitForTimeout(150);
