@@ -363,6 +363,33 @@ const check = (label, actual, expected) => {
     await page.click('.start-btn');
     await page.evaluate(() => { FS.settings.metronome.bpm = 120; FS.save(); });
     check(`${P} metronome: beats 500 ms apart at 120 BPM`, String([...new Set(beatGaps)]), '500');
+    // Visual sync: +200 ms delays the beat lights by ~200 ms relative to the audio.
+    const lightLag = async () => {
+      await page.evaluate(() => {
+        window.__beats = [];
+        window.__lights = [];
+        const dots = document.querySelector('.beat-dots');
+        window.__mo = new MutationObserver(() => window.__lights.push(FS.audio.ctx().currentTime));
+        window.__mo.observe(dots, { attributes: true, subtree: true, attributeFilter: ['class'] });
+      });
+      await page.click('.start-btn');
+      await page.waitForTimeout(2600);
+      await page.click('.start-btn');
+      return page.evaluate(() => {
+        window.__mo.disconnect();
+        // One "on" toggle per beat change: keep the first record after each beat's audio time.
+        const lags = window.__beats.map((when) => (window.__lights.find((t) => t >= when - 0.12) ?? NaN) - when).filter((x) => !isNaN(x));
+        lags.sort((a, b) => a - b);
+        return lags[Math.floor(lags.length / 2)] * 1000;
+      });
+    };
+    const lag0 = await lightLag();
+    await page.$eval('.sync-slider', (el) => { el.value = 200; el.dispatchEvent(new Event('input')); });
+    check(`${P} metronome: sync readout`, (await page.textContent('.sync-val')).trim(), 'Lights 200 ms later');
+    const lag200 = await lightLag();
+    check(`${P} metronome: +200 ms sync delays the lights ~200 ms`, String(Math.abs(lag200 - lag0 - 200) < 50) + ` (${Math.round(lag0)} → ${Math.round(lag200)} ms)`, /^true /);
+    await page.click('.sync-info button:has-text("Reset")');
+    check(`${P} metronome: sync reset`, (await page.textContent('.sync-val')).trim(), 'In sync (0 ms)');
     await shot('metronome');
 
     // Tuner: fake mic plays A2 +8 cents.

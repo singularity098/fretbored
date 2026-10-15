@@ -111,6 +111,9 @@ circle-of-fifths colours (coral root, violet notes, white labels) everywhere a f
 - The owner tried a 300 ms lookahead and asked for it to be reverted (it delays setting changes).
 - Click samples are edge-faded on decode (the classic WAVs are truncated mid-decay and popped).
 - `latencyHint: 'playback'` on the AudioContext.
+- Visual sync (`metronome.syncMs`, −100…+300 ms): `draw()` uses `audibleNow() - syncMs`, so only the
+  visuals shift. The earliest setting is bounded by `LOOKAHEAD` — beats must already be queued to be
+  drawn early. The smoke test measures the light-vs-audio lag at 0 and +200 ms.
 - Tempo display: queued beats carry the tempo they were scheduled at, which can be behind a ± tap.
   `draw()` only shows a beat's tempo while the tempo trainer is on (it changes tempo itself); otherwise
   the display shows `m.bpm`, or the old tempo would flash back for a beat or two.

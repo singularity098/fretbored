@@ -355,6 +355,26 @@
     const subVolSlider = h('input', { type: 'range', min: 0, max: 1, step: 0.01, 'aria-label': 'Subdivision volume' });
     subVolSlider.addEventListener('input', () => { m.subVolume = +subVolSlider.value; FS.save(); });
 
+    // Visual sync: shifts only the lights/sweep, never the audio. Earlier is limited by how far
+    // ahead beats are scheduled (LOOKAHEAD), so the range is lopsided.
+    const SYNC_MIN = -100;
+    const SYNC_MAX = 300;
+    const syncSlider = h('input', { type: 'range', min: SYNC_MIN, max: SYNC_MAX, step: 5, class: 'sync-slider', 'aria-label': 'Visual sync in milliseconds' });
+    const syncVal = h('span', { class: 'sync-val' });
+    const setSync = (v) => {
+      m.syncMs = Math.min(SYNC_MAX, Math.max(SYNC_MIN, Math.round(v / 5) * 5));
+      FS.save();
+      renderSync();
+    };
+    syncSlider.addEventListener('input', () => setSync(+syncSlider.value));
+    const syncStep = (label, d, aria) => h('button', { class: 'btn round small', 'aria-label': aria, onclick: () => setSync(m.syncMs + d) }, label);
+    const syncReset = h('button', { class: 'btn ghost small', onclick: () => setSync(0) }, 'Reset');
+    function renderSync() {
+      syncSlider.value = m.syncMs;
+      syncVal.textContent = m.syncMs === 0 ? 'In sync (0 ms)' : m.syncMs > 0 ? `Lights ${m.syncMs} ms later` : `Lights ${-m.syncMs} ms earlier`;
+      syncReset.hidden = m.syncMs === 0;
+    }
+
     // Trainer
     const trainerSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Trainer mode' });
     for (const [id, label] of [['off', 'Off'], ['step', 'Step'], ['ramp', 'Gradual']]) {
@@ -432,7 +452,12 @@
           h('div', { class: 'card' },
             h('h3', { class: 'section-title' }, 'Sound'),
             soundSeg,
-            h('div', { class: 'inline wrap gap-lg' }, field('Volume', volSlider), field('Subdivision volume', subVolSlider))
+            h('div', { class: 'inline wrap gap-lg' }, field('Volume', volSlider), field('Subdivision volume', subVolSlider)),
+            h('div', { class: 'field sync-field' },
+              h('span', { class: 'field-label' }, 'Visual sync'),
+              h('div', { class: 'inline sync-row' }, syncStep('−', -5, 'Lights 5 ms earlier'), syncSlider, syncStep('+', 5, 'Lights 5 ms later')),
+              h('div', { class: 'inline sync-info' }, syncVal, syncReset),
+              h('p', { class: 'hint' }, 'If the clicks sound after the lights flash (common with Bluetooth speakers), move right; if before, move left.'))
           ),
           h('div', { class: 'card' },
             h('h3', { class: 'section-title' }, 'Tempo trainer'),
@@ -611,6 +636,7 @@
       soundSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === m.sound));
       volSlider.value = m.volume;
       subVolSlider.value = m.subVolume;
+      renderSync();
       gapToggle.checked = m.gap.on;
       gapPlay.input.value = m.gap.play;
       gapMute.input.value = m.gap.mute;
@@ -636,7 +662,7 @@
     function draw() {
       if (!eng.running) return;
       const ctx = FS.audio.ctx();
-      const now = audibleNow(ctx);
+      const now = audibleNow(ctx) - m.syncMs / 1000; // the user's visual sync offset
       let changed = false;
       while (eng.queue.length && eng.queue[0].time <= now) {
         eng.current = eng.queue.shift();

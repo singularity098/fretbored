@@ -49,6 +49,7 @@
       sound: 'classic',
       volume: 0.8,
       subVolume: 0.5,
+      syncMs: 0, // visual offset: + delays the lights (for devices whose audio comes out late)
       gap: { on: false, play: 2, mute: 2 },
       trainer: { mode: 'off', start: 80, end: 120, step: 5, every: 4, rampBars: 32 },
     },

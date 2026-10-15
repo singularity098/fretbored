@@ -82,6 +82,7 @@
   - Per-beat accents: tap a beat to cycle accent / normal / soft / mute
   - Subdivisions: eighths, triplets, sixteenths, quintuplets, sextuplets, swing, dotted, and mixed 8th/16th figures
   - Sounds: Classic and Digital (the supplied samples) and Beep; separate volume for subdivisions
+  - Visual sync: for devices whose audio comes out late or early (e.g. Bluetooth speakers), a slider shifts the beat lights and sweep from 100 ms earlier to 300 ms later, in 5 ms steps (− / + buttons for fine steps, Reset). Only the visuals move; the audio timing is untouched. Remembered per device
   - Trainer: Step mode (+N BPM every M bars from start to end tempo) and Gradual mode (smooth ramp over N bars); works for slowing down too
   - Gap trainer: play N bars, then mute M bars to test internal time
   - Visual pulse and sweeping indicator synced to what you hear

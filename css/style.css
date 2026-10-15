@@ -1045,3 +1045,10 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
   .tempo-row .bpm-slider { flex-basis: 100%; order: -1; }
   .beat-dot { width: 42px; height: 42px; }
 }
+
+/* Metronome visual sync */
+.sync-field { margin-top: 14px; }
+.sync-row { gap: 8px; align-items: center; }
+.sync-row .sync-slider { flex: 1; min-width: 120px; }
+.sync-info { gap: 10px; align-items: center; min-height: 30px; }
+.sync-val { font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 13px; }
