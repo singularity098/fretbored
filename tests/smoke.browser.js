@@ -91,7 +91,7 @@ const check = (label, actual, expected) => {
 
     // App colour themes: header palette menu, remembered; Dark stays the default.
     check(`${P} default theme`, await page.$eval('html', (e) => e.dataset.theme), 'dark');
-    for (const th of ['light', 'amoled', 'charcoal', 'dracula', 'solarized', 'dark']) {
+    for (const th of ['light', 'amoled', 'charcoal', 'dracula', 'solarized', 'solarizedlight', 'tokyonight', 'latte', 'frappe', 'macchiato', 'mocha', 'dark']) {
       await page.click('#theme-btn');
       await page.click(`#theme-menu [data-id="${th}"]`);
       await page.waitForTimeout(100);

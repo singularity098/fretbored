@@ -77,7 +77,9 @@ The app icon (`assets/icon.svg`) uses the same Circle colours. It is duplicated 
 App colour themes: `THEMES` in `app.js` (id, name, swatch colours; the first swatch colour is the
 browser `theme-color`) + a `:root[data-theme='id']` block of variables in `style.css`. Each theme sets its own
 `--accent`/`--accent-2` pair (active buttons, pills, tabs) and `--on-accent` (text on them — dark for
-light accents like cyan or yellow). Adding one needs both, plus the smoke test's theme list. Keep the palette selectors scoped to `:root` — an
+light accents like cyan or yellow). Named themes (Dracula, Solarized Dark/Light, Tokyo Night, Catppuccin) use their official
+palettes; Catppuccin maps mantle → `--bg`, base → `--surface`, surface0/1 → `--surface-2/3`. Adding one
+needs both, plus the smoke test's theme list. Keep the palette selectors scoped to `:root` — an
 unscoped `[data-theme='light']` also matched a menu button carrying that attribute.
 
 Dot themes live in `FS.DOT_THEMES` (`fretboard.js`). Default is `circle` — the owner asked for the

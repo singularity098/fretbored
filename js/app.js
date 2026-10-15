@@ -13,7 +13,13 @@
     { id: 'amoled', name: 'AMOLED Black', sw: ['#000000', '#0b0b0c', '#22d3ee'] },
     { id: 'charcoal', name: 'Charcoal', sw: ['#1c1c1e', '#2c2c30', '#34d399'] },
     { id: 'dracula', name: 'Dracula', sw: ['#21222c', '#44475a', '#ff79c6'] },
-    { id: 'solarized', name: 'Solarized', sw: ['#002b36', '#073642', '#b58900'] },
+    { id: 'solarized', name: 'Solarized Dark', sw: ['#002b36', '#073642', '#b58900'] },
+    { id: 'solarizedlight', name: 'Solarized Light', sw: ['#eee8d5', '#fdf6e3', '#268bd2'] },
+    { id: 'tokyonight', name: 'Tokyo Night', sw: ['#16161e', '#1a1b26', '#7aa2f7'] },
+    { id: 'latte', name: 'Catppuccin Latte', sw: ['#e6e9ef', '#eff1f5', '#8839ef'] },
+    { id: 'frappe', name: 'Catppuccin Frappé', sw: ['#292c3c', '#303446', '#a6d189'] },
+    { id: 'macchiato', name: 'Catppuccin Macchiato', sw: ['#1e2030', '#24273a', '#f5a97f'] },
+    { id: 'mocha', name: 'Catppuccin Mocha', sw: ['#181825', '#1e1e2e', '#cba6f7'] },
   ];
   FS.THEMES = THEMES;
 
