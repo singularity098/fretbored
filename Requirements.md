@@ -20,6 +20,7 @@
   - Note names are spelled correctly for the key (sharps vs flats chosen automatically, e.g. B♭ in F major, F♯ in G major)
   - Left-handed mode mirrors the fretboard
   - Layout (phones): Sideways or Vertical — vertical shows the nut at the top and the low string on the left, like a chord chart
+  - On Chords and Arpeggios the vertical fretboard shows only the frets around the current shape (from the nut when the shape is near it, at least five frets, one spare fret below for editing); a "Show the whole neck" button below it brings back the full neck (remembered)
   - Fretboard wood: Ebony (default), Rosewood or Maple
   - Dot color themes: Circle (default — the circle-of-fifths colours: coral root, violet notes, white labels), Aurora, Amber, Neon, Forest, Ivory, Spectrum (one color per interval)
 ##### Guitar Scales Tab

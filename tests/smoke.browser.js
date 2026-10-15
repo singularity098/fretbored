@@ -139,6 +139,38 @@ const check = (label, actual, expected) => {
     await page.click('#panel-arpeggios .play-btn');
     await shot('arpeggios');
 
+    // Vertical board (phones): Chords and Arpeggios crop to the shape, with a whole-neck toggle.
+    if (name === 'phone') {
+      const setVertical = (v) => page.evaluate((v) => { FS.settings.fretboard.orientation = v ? 'vertical' : 'horizontal'; FS.emit('fretboard'); }, v);
+      const board = (tab) => page.$eval(`#panel-${tab} .fretboard`, (svg) => {
+        const [, y0, , h] = svg.getAttribute('viewBox').split(' ').map(Number);
+        const inView = (el) => { const y = el.transform.baseVal.length ? el.transform.baseVal[0].matrix.f : +el.getAttribute('y'); return y >= y0 && y <= y0 + h; };
+        return { h, notes: svg.querySelectorAll('.note').length, notesShown: [...svg.querySelectorAll('.note')].filter(inView).length, mutesShown: [...svg.querySelectorAll('.mute')].filter(inView).length };
+      });
+      await setVertical(true);
+      await page.waitForTimeout(150);
+      let b = await board('arpeggios'); // position 2: frets 5–8 → shows frets 4–9
+      check(`${P} vertical arpeggio: cropped to the shape`, String(b.h < 420), 'true');
+      check(`${P} vertical arpeggio: every shape note visible`, `${b.notesShown}/${b.notes}`, '7/7');
+      await page.click('#panel-arpeggios .neck-toggle');
+      await page.waitForTimeout(150);
+      check(`${P} vertical arpeggio: whole neck on request`, String((await board('arpeggios')).h > 900), 'true');
+      await page.click('#panel-arpeggios .neck-toggle');
+      await page.waitForTimeout(150);
+      await page.click('#tab-chords');
+      await page.waitForTimeout(150);
+      await page.click('#panel-chords .pill[data-id="maj"]'); // C major
+      await page.click('#panel-chords [aria-label="Position"] .pill:nth-child(2)');
+      await page.waitForTimeout(150);
+      b = await board('chords');
+      check(`${P} vertical chord: cropped`, String(b.h < 420), 'true');
+      check(`${P} vertical chord: muted-string marks visible`, String(b.mutesShown >= 1 || !(await page.$$eval('#panel-chords .mute', (m) => m.length))), 'true');
+      await shot('chords-vertical');
+      await setVertical(false);
+      await page.click('#tab-arpeggios');
+      await page.waitForTimeout(100);
+    }
+
     // Circle of fifths: D Dorian.
     await page.click('#tab-circle');
     await page.waitForTimeout(250);

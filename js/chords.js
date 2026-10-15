@@ -279,7 +279,10 @@
           }
         });
       }
-      board.setModel({ notes, muted });
+      // Vertical boards crop to the shape's frets (see Fretboard.cropRange).
+      const used = fr ? fr.filter((x) => x > 0) : [];
+      const focus = fr ? { lo: used.length ? Math.min(...used) : 0, hi: used.length ? Math.max(...used) : 0 } : null;
+      board.setModel({ notes, muted, focus });
       if (scrollPending && fr && fbHost.clientWidth) {
         scrollPending = false;
         const fretted = fr.filter((x) => x > 0);

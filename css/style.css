@@ -433,6 +433,8 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .fretboard { display: block; }
 .fretboard-scroll.vertical { overflow-x: hidden; display: flex; justify-content: center; }
+.neck-toggle { display: block; margin: 6px auto 0; }
+.neck-toggle[hidden] { display: none; }
 .mobile-only { display: none !important; }
 .fretboard.wood-ebony { --board-1: #121010; --board-2: #1f1b19; --fret: #c9ccd3; --inlay: rgba(235, 230, 220, 0.6); --nut: #efe8da; }
 .fretboard.wood-rosewood { --board-1: #2a1d17; --board-2: #3d2a20; --fret: #c9ccd3; --inlay: rgba(240, 232, 220, 0.55); --nut: #efe8da; }

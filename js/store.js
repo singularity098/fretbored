@@ -18,6 +18,7 @@
       orientation: 'horizontal',
       controlsOpen: false, // fretboard settings section expanded (shared by all tabs)
       lefty: false,
+      wholeNeck: false, // vertical Chords/Arpeggios boards: whole neck instead of just the shape
       customTunings: [],
     },
     scales: { root: 0, scaleId: 'major', pcs: null, category: 'common', lastScale: null },

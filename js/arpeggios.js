@@ -250,7 +250,7 @@
           }
         });
       }
-      board.setModel({ notes, muted: [] });
+      board.setModel({ notes, muted: [], focus: shape ? { lo: shape.lo, hi: shape.hi } : null }); // vertical boards crop to it
       if (scrollPending && shape && fbHost.clientWidth) {
         scrollPending = false;
         board.scrollToFret(Math.round((shape.lo + shape.hi) / 2));

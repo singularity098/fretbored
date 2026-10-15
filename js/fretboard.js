@@ -141,7 +141,19 @@
       const g2 = vertical ? 'x1="0" y1="0" x2="1" y2="0"' : 'x1="0" y1="0" x2="0" y2="1"';
 
       this.host.classList.toggle('vertical', vertical);
-      parts.push(`<svg xmlns="${NS}" class="fretboard wood-${FS.WOODS.some((w) => w[0] === fb.wood) ? fb.wood : 'ebony'}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Fretboard">`);
+      // Vertical boards on Chords/Arpeggios crop to the shape's frets (model.focus) unless the
+      // player asked for the whole neck. The full board is still drawn; the viewBox hides the rest.
+      const crop = this.cropRange(L);
+      this.updateNeckToggle(L);
+      let y0 = 0;
+      let shownH = height;
+      if (crop) {
+        // Room above the top fret for the muted-string markers when the nut is cropped away.
+        const muteRoom = (this.model.muted || []).length ? 24 : 8;
+        y0 = crop.start === 0 ? 0 : fretX[crop.start - 1] - muteRoom;
+        shownH = (crop.end >= frets ? height : fretX[crop.end] + 8) - y0;
+      }
+      parts.push(`<svg xmlns="${NS}" class="fretboard wood-${FS.WOODS.some((w) => w[0] === fb.wood) ? fb.wood : 'ebony'}" width="${width}" height="${shownH}" viewBox="0 ${y0} ${width} ${shownH}" role="img" aria-label="Fretboard">`);
       parts.push(`<defs>
         <linearGradient id="${this.uid}wood" ${g2}>
           <stop offset="0" style="stop-color:var(--board-1)"/><stop offset="0.5" style="stop-color:var(--board-2)"/><stop offset="1" style="stop-color:var(--board-1)"/>
@@ -218,7 +230,7 @@
 
       // Muted string markers
       for (const s of this.model.muted || []) {
-        const c = xy(cellU(0), stringV(s));
+        const c = xy(crop && crop.start > 0 ? fretX[crop.start - 1] - 13 : cellU(0), stringV(s));
         parts.push(`<text class="mute" x="${c.x}" y="${c.y}">×</text>`);
       }
 
@@ -255,6 +267,37 @@
         this.lastMode = mode;
         this.host.scrollLeft = !vertical && L.lefty ? this.host.scrollWidth : 0;
       }
+    }
+
+    /*
+     * Frets to show on a cropped vertical board: the focus range with a fret to spare below it
+     * (room to edit a chord), at least five frets, and from the nut when the shape is near it.
+     */
+    cropRange(L) {
+      const focus = this.model.focus;
+      if (!L.vertical || !focus || FS.settings.fretboard.wholeNeck) return null;
+      const start = focus.lo <= 2 ? 0 : focus.lo - 1;
+      const end = Math.min(L.frets, Math.max(focus.hi + 1, start + 4));
+      return { start, end };
+    }
+
+    // "Whole neck / Shape only" button under a vertical board that has a focus range.
+    updateNeckToggle(L) {
+      const show = L.vertical && !!this.model.focus;
+      if (!this.neckBtn) {
+        if (!show) return;
+        this.neckBtn = document.createElement('button');
+        this.neckBtn.type = 'button';
+        this.neckBtn.className = 'btn ghost small neck-toggle';
+        this.neckBtn.addEventListener('click', () => {
+          FS.settings.fretboard.wholeNeck = !FS.settings.fretboard.wholeNeck;
+          FS.save();
+          FS.emit('fretboard');
+        });
+        this.host.after(this.neckBtn);
+      }
+      this.neckBtn.hidden = !show;
+      this.neckBtn.textContent = FS.settings.fretboard.wholeNeck ? 'Show this shape only' : 'Show the whole neck';
     }
 
     // Scroll a horizontally overflowing board so a fret is in view.
