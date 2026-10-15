@@ -8,7 +8,7 @@
   - On narrow screens the fretboard scrolls sideways by default; a Layout toggle (phones only) switches it to a vertical fretboard that scrolls down the page
 - Link to github repository at the top right corner
 - Navigate the application through tabs at the top. Initial version has a tab for Guitar Scales, Guitar Chords, Circle of Fifths, Metronome, plus Arpeggios (after Chords), Trainer (between Arpeggios and Circle of Fifths) and Tuner tabs. Tab order: Scales, Chords, Arpeggios, Trainer, Circle of Fifths, Metronome, Tuner
-- Wherever a fretboard appears (Scales, Chords, Arpeggios, Trainer) it is the first section on the tab
+- Wherever a fretboard appears (Scales, Chords, Arpeggios, Trainer) it is the first section on the tab; likewise the circle of fifths wheel is the first section of its tab
 - On the Scales, Chords and Arpeggios tabs, a slim bar shows the current scale, chord or arpeggio (name, notes, position) with a play button and a button that jumps to the controls whenever the title is out of view: pinned under the tabs after scrolling past the title, or at the bottom of the screen while the title is still below (the fretboard comes first)
 - All settings (tab, theme, fretboard options, custom tunings, last selections, metronome settings) are remembered between visits in the browser's local storage
 - For any tabs which show notes on the fretboard, the fretboard display is common among those tabs and allows for adjusting to common tunings, Changing the number of strings (6, 7, 8, and even 4 or 5 for bass), changing the number of frets (21, 22, or 24), and there are some color themes for the dots on the fretboard to choose from

@@ -126,20 +126,24 @@
       },
     }, 'Show on fretboard →');
 
+    // The wheel is the first section (owner's layout rule); key/mode controls and the info
+    // panel sit beside it on desktop and below it on phones.
     panel.append(
-      h('div', { class: 'card controls' },
-        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Key'), keyPills),
-        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Mode'), modePills)
-      ),
       h('div', { class: 'circle-layout' },
         h('div', { class: 'card circle-card' }, svg),
-        h('div', { class: 'card info-card' },
-          h('div', { class: 'hero-head' }, h('div', null, infoTitle, infoSub)),
-          noteChips,
-          h('h3', { class: 'section-title' }, 'Diatonic chords'),
-          chordTable,
-          related,
-          h('div', { class: 'hero-actions' }, playBtn, openBtn)
+        h('div', { class: 'circle-side' },
+          h('div', { class: 'card controls' },
+            h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Key'), keyPills),
+            h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Mode'), modePills)
+          ),
+          h('div', { class: 'card info-card' },
+            h('div', { class: 'hero-head' }, h('div', null, infoTitle, infoSub)),
+            noteChips,
+            h('h3', { class: 'section-title' }, 'Diatonic chords'),
+            chordTable,
+            related,
+            h('div', { class: 'hero-actions' }, playBtn, openBtn)
+          )
         )
       )
     );

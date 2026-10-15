@@ -48,7 +48,8 @@ Events: `fretboard` (any fretboard setting or tuning changed → re-render), `ta
 Tests that use fretboard settings must open `.fb-settings` first (it starts folded).
 
 Layout rule (owner): wherever a fretboard appears, its card (`.board-card`) is the first section of
-the tab — each tab does `panel.prepend(panel.querySelector('.board-card'))`.
+the tab — each tab does `panel.prepend(panel.querySelector('.board-card'))`. Same for the circle of
+fifths: the wheel comes first (Key/Mode controls and info sit beside it on desktop, below on phones).
 
 Settings: add new keys to `DEFAULTS` in `store.js`. `merge()` drops unknown keys and replaces
 values whose type doesn't match the default (a default of `null` accepts anything). A nested

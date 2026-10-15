@@ -473,6 +473,7 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 /* ---------------------------------------------------------------- Circle of fifths */
 
 .circle-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.circle-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .circle-card { display: grid; place-items: center; padding: 12px; }
 .circle-svg { width: 100%; max-width: 600px; height: auto; display: block; }
 .cof-seg { cursor: pointer; outline: none; }

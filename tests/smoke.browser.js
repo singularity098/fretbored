@@ -142,6 +142,7 @@ const check = (label, actual, expected) => {
     // Circle of fifths: D Dorian.
     await page.click('#tab-circle');
     await page.waitForTimeout(250);
+    check(`${P} circle: wheel is the first section`, String(await page.$eval('#panel-circle', (p) => !!p.firstElementChild.querySelector(':scope > .circle-card'))), 'true');
     await page.click('#panel-circle .pill:has-text("Dorian")');
     await page.waitForTimeout(150);
     check(`${P} circle: C Dorian`, await page.textContent('#panel-circle .hero-title'), 'C Dorian');
