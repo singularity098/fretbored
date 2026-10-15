@@ -5,10 +5,69 @@
   const TABS = ['scales', 'chords', 'arpeggios', 'trainer', 'circle', 'metronome', 'tuner'];
   const inited = {};
 
+  // App colour themes (the palettes live in style.css as [data-theme=…]). Swatch: background,
+  // card, accent — also used for the browser's theme-color.
+  const THEMES = [
+    { id: 'dark', name: 'Dark', sw: ['#0c0f14', '#1a2130', '#ff7a59'] },
+    { id: 'light', name: 'Light', sw: ['#f5f6fa', '#ffffff', '#ff7a59'] },
+    { id: 'amoled', name: 'AMOLED Black', sw: ['#000000', '#121212', '#ff7a59'] },
+    { id: 'charcoal', name: 'Charcoal', sw: ['#1c1c1e', '#2c2c30', '#ff7a59'] },
+    { id: 'dracula', name: 'Dracula', sw: ['#21222c', '#44475a', '#ff79c6'] },
+    { id: 'solarized', name: 'Solarized', sw: ['#002b36', '#073642', '#cb4b16'] },
+  ];
+  FS.THEMES = THEMES;
+
   function applyTheme() {
-    document.documentElement.dataset.theme = FS.settings.theme;
+    const theme = THEMES.find((x) => x.id === FS.settings.theme) || THEMES[0];
+    FS.settings.theme = theme.id;
+    document.documentElement.dataset.theme = theme.id;
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.content = FS.settings.theme === 'light' ? '#f5f6fa' : '#0c0f14';
+    if (meta) meta.content = theme.sw[0];
+    document.querySelectorAll('#theme-menu [role="menuitemradio"]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.id === theme.id)));
+  }
+
+  // Header palette button → menu of themes.
+  function setupThemeMenu() {
+    const btn = document.getElementById('theme-btn');
+    const menu = document.getElementById('theme-menu');
+    for (const theme of THEMES) {
+      menu.append(FS.h('button', {
+        role: 'menuitemradio', class: 'theme-item', dataset: { id: theme.id },
+        onclick: () => {
+          FS.settings.theme = theme.id;
+          FS.save();
+          applyTheme();
+          FS.emit('fretboard');
+          close();
+          btn.focus();
+        },
+      }, FS.h('span', { class: 'theme-swatch', 'aria-hidden': 'true', style: `--sw-bg:${theme.sw[0]};--sw-card:${theme.sw[1]};--sw-accent:${theme.sw[2]}` }), theme.name));
+    }
+    applyTheme();
+    const open = () => {
+      menu.hidden = false;
+      btn.setAttribute('aria-expanded', 'true');
+      (menu.querySelector('[aria-checked="true"]') || menu.firstElementChild).focus();
+    };
+    const close = () => {
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+    };
+    btn.addEventListener('click', () => (menu.hidden ? open() : close()));
+    document.addEventListener('pointerdown', (e) => {
+      if (!menu.hidden && !e.target.closest('.theme-picker')) close();
+    });
+    menu.addEventListener('keydown', (e) => {
+      const items = [...menu.children];
+      const i = items.indexOf(document.activeElement);
+      if (e.key === 'Escape') {
+        close();
+        btn.focus();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+      }
+    });
   }
 
   // Panels are built the first time they are shown so hidden fretboards don't render at width 0.
@@ -131,12 +190,7 @@
       });
     });
 
-    document.getElementById('theme-toggle').addEventListener('click', () => {
-      FS.settings.theme = FS.settings.theme === 'light' ? 'dark' : 'light';
-      FS.save();
-      applyTheme();
-      FS.emit('fretboard');
-    });
+    setupThemeMenu();
 
     const fromHash = location.hash.slice(1);
     FS.showTab(TABS.includes(fromHash) ? fromHash : FS.settings.tab);

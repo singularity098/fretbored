@@ -89,6 +89,26 @@ const check = (label, actual, expected) => {
     await page.click('#tab-scales');
     await page.waitForTimeout(150);
 
+    // App colour themes: header palette menu, remembered; Dark stays the default.
+    check(`${P} default theme`, await page.$eval('html', (e) => e.dataset.theme), 'dark');
+    for (const th of ['light', 'amoled', 'charcoal', 'dracula', 'solarized', 'dark']) {
+      await page.click('#theme-btn');
+      await page.click(`#theme-menu [data-id="${th}"]`);
+      await page.waitForTimeout(100);
+      check(`${P} theme ${th} applied`, await page.$eval('html', (e) => e.dataset.theme), th);
+      check(`${P} theme menu closes`, String(await page.$eval('#theme-menu', (m) => m.hidden)), 'true');
+      if (th !== 'dark') await shot(`theme-${th}`);
+    }
+    await page.click('#theme-btn');
+    await page.click('#theme-menu [data-id="dracula"]');
+    await page.waitForTimeout(300);
+    await page.reload();
+    await page.waitForTimeout(300);
+    check(`${P} theme remembered`, await page.$eval('html', (e) => e.dataset.theme), 'dracula');
+    await page.click('#theme-btn');
+    await page.click('#theme-menu [data-id="dark"]');
+    await page.waitForTimeout(100);
+
     // Fretboard settings: folded by default; opening it on one tab opens it on the others and is remembered.
     const fbOpen = (tab) => page.$eval(`#panel-${tab} .fb-settings`, (d) => d.open);
     check(`${P} fretboard settings folded by default`, String(await fbOpen('scales')), 'false');

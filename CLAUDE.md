@@ -20,7 +20,7 @@ with user-visible changes — the owner asked for that.
   the metronome WAVs live base64-encoded in `js/sounds.js` (regenerate with
   `node tools/embed-sounds.js` after changing `assets/sounds/*.wav`; never edit sounds.js by hand).
   Exception: the tuner's microphone needs https, so it only works on the hosted site.
-- Dark theme by default (light via the header toggle); must work on desktop and phones.
+- Dark theme by default (other app themes from the header palette menu); must work on desktop and phones.
 - Metronome timing must be sample-accurate (see Audio below).
 
 ## Installable app (PWA)
@@ -54,7 +54,7 @@ Script order in `index.html` matters:
 | `js/scales.js`, `chords.js`, `arpeggios.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
 | `js/pitch.js` | `FS.pitch` — McLeod pitch detector with FFT autocorrelation (pure, unit-tested) |
 | `js/app.js` | Tabs (`FS.showTab(tab, from?)`), theme, startup, phone swipe between tabs (`setupSwipe`: ignores swipes starting on sideways-scrolling elements, inputs, dialogs or `[data-noswipe]`). Tabs are initialised lazily on first view |
-| `css/style.css` | All styles; colours are CSS variables on `:root` / `[data-theme='light']` |
+| `css/style.css` | All styles; colours are CSS variables on `:root` (Dark) and one `:root[data-theme='…']` block per app theme |
 
 Events: `fretboard` (any fretboard setting or tuning changed → re-render), `tab` (tab switched),
 `scales:set` (Circle → Scales hand-off), `fbcontrols:open` (settings section opened/closed).
@@ -73,6 +73,11 @@ saved, bump a version key and migrate once in `store.js` (see `fretboard.themeVe
 The app icon (`assets/icon.svg`) uses the same Circle colours. It is duplicated inline in
 `index.html` as the favicon data URI and the header `.logo` SVG, and as `assets/icon-maskable.svg`
 + the PNGs in `assets/icons/` — keep them all in sync.
+
+App colour themes: `THEMES` in `app.js` (id, name, swatch colours; the first swatch colour is the
+browser `theme-color`) + a `:root[data-theme='id']` block of variables in `style.css`. Adding one
+needs both, plus the smoke test's theme list. Keep the palette selectors scoped to `:root` — an
+unscoped `[data-theme='light']` also matched a menu button carrying that attribute.
 
 Dot themes live in `FS.DOT_THEMES` (`fretboard.js`). Default is `circle` — the owner asked for the
 circle-of-fifths colours (coral root, violet notes, white labels) everywhere a fretboard appears.
