@@ -419,10 +419,10 @@ main { max-width: 1320px; margin: 0 auto; padding: 20px 20px 8px; overflow-x: cl
 
 .panel { display: flex; flex-direction: column; gap: 16px; animation: fade 0.25s ease; }
 
-.panel.slide-next { animation: slideNext 0.22s ease; }
-.panel.slide-prev { animation: slidePrev 0.22s ease; }
-@keyframes slideNext { from { opacity: 0; transform: translateX(36px); } to { opacity: 1; transform: none; } }
-@keyframes slidePrev { from { opacity: 0; transform: translateX(-36px); } to { opacity: 1; transform: none; } }
+.panel.slide-next { animation: slideNext 0.24s cubic-bezier(0.2, 0.8, 0.3, 1); }
+.panel.slide-prev { animation: slidePrev 0.24s cubic-bezier(0.2, 0.8, 0.3, 1); }
+@keyframes slideNext { from { opacity: 0.3; transform: translateX(45%); } to { opacity: 1; transform: none; } }
+@keyframes slidePrev { from { opacity: 0.3; transform: translateX(-45%); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .panel, .panel.slide-next, .panel.slide-prev { animation: none; } }
 :root[data-theme='amoled'] .card { background: var(--surface); } /* flat near-black, no sheen */
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }

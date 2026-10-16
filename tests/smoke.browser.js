@@ -80,7 +80,7 @@ const check = (label, actual, expected) => {
     const P = `[${name}]`;
 
     // Layout: tab order, and the fretboard is the first section wherever it appears.
-    check(`${P} tab order`, await page.$$eval('[role="tab"]', (t) => t.map((x) => x.dataset.tab).join(' ')), 'scales chords arpeggios trainer circle metronome tuner');
+    check(`${P} tab order`, await page.$$eval('[role="tab"]', (t) => t.map((x) => x.dataset.tab).join(' ')), 'scales chords arpeggios trainer circle tuner metronome');
     for (const tab of ['scales', 'chords', 'arpeggios', 'trainer']) {
       await page.click(`#tab-${tab}`);
       await page.waitForTimeout(150);
@@ -130,21 +130,39 @@ const check = (label, actual, expected) => {
     // Phones: swiping the page changes tab; swipes on the sideways-scrolling fretboard don't.
     if (name === 'phone') {
       const cdp = await ctx.newCDPSession(page);
-      const swipe = async (sel, dx) => {
+      // stepMs > 0 makes a slow drag; hold leaves the finger down (call release() after).
+      const swipe = async (sel, dx, { stepMs = 0, hold = false } = {}) => {
         const r = await page.$eval(sel, (el) => { const b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: Math.max(b.top, 0) + 40 }; });
         const pt = (x) => [{ x, y: r.y, id: 1 }];
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(r.x - dx / 2) });
-        for (let k = 1; k <= 5; k++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(r.x - dx / 2 + (dx * k) / 5) });
+        for (let k = 1; k <= 5; k++) {
+          await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: pt(r.x - dx / 2 + (dx * k) / 5) });
+          if (stepMs) await page.waitForTimeout(stepMs);
+        }
+        if (!hold) await release();
+      };
+      const release = async () => {
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-        await page.waitForTimeout(250);
+        await page.waitForTimeout(400);
       };
       const tab = () => page.$eval('[role="tab"][aria-selected="true"]', (b) => b.dataset.tab);
+      const shift = (t) => page.$eval(`#panel-${t}`, (p) => { const m = getComputedStyle(p).transform; return m === 'none' ? 0 : Math.round(new DOMMatrix(m).m41); });
+      // The page follows the finger while dragging, and springs back from a short, slow drag.
+      await swipe('#panel-scales .hero', -100, { stepMs: 60, hold: true });
+      check(`${P} swipe: page follows the finger`, String((await shift('scales')) < -60), 'true');
+      await release();
+      check(`${P} swipe: short slow drag springs back`, `${await tab()} ${await shift('scales')}`, 'scales 0');
       await swipe('#panel-scales .hero', -160);
       check(`${P} swipe left: next tab`, await tab(), 'chords');
       await swipe('#panel-chords .hero', 160);
       check(`${P} swipe right: previous tab`, await tab(), 'scales');
       await swipe('#panel-scales .hero', 160);
-      check(`${P} swipe right on the first tab stays`, await tab(), 'scales');
+      check(`${P} swipe right on the first tab stays`, `${await tab()} ${await shift('scales')}`, 'scales 0');
+      await page.click('#tab-circle');
+      await swipe('#panel-circle .circle-card', -160);
+      check(`${P} swipe left from Circle → Tuner`, await tab(), 'tuner');
+      await page.click('#tab-scales');
+      await page.waitForTimeout(150);
       await swipe('#panel-scales .fretboard-scroll', -160);
       check(`${P} swipe on the sideways fretboard scrolls it, not the tabs`, await tab(), 'scales');
       check(`${P} page never scrolls sideways`, String(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)), 'true');

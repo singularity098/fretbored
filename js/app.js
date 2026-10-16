@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});
-  const TABS = ['scales', 'chords', 'arpeggios', 'trainer', 'circle', 'metronome', 'tuner'];
+  const TABS = ['scales', 'chords', 'arpeggios', 'trainer', 'circle', 'tuner', 'metronome'];
   const inited = {};
 
   // App colour themes (the palettes live in style.css as [data-theme=…]). Swatch: background,
@@ -105,42 +105,93 @@
   };
 
   /*
-   * Phones: swipe the page left/right to go to the next/previous tab. Swipes that start on
-   * something that scrolls sideways (sideways fretboard, tab bar), a slider or a dialog are left
-   * alone, as are mostly-vertical moves, slow drags and multi-finger gestures.
+   * Phones: drag the page sideways to move between tabs. The panel follows the finger; letting go
+   * past about a third of the screen (or after a quick flick) slides it off and the neighbouring
+   * tab slides in from that side, otherwise it springs back. At the first/last tab the page only
+   * stretches a little. Gestures that start on something that scrolls sideways (sideways
+   * fretboard, tab bar), a form control or a dialog are left alone, as are mostly-vertical moves.
    */
   function setupSwipe() {
-    let start = null;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let g = null; // the gesture in progress
     const scrollsSideways = (el) => {
       for (; el && el !== document.body; el = el.parentElement) {
         if (el.scrollWidth > el.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true;
       }
       return false;
     };
+    const neighbour = (dx) => {
+      const i = TABS.indexOf(FS.settings.tab) + (dx < 0 ? 1 : -1);
+      return i >= 0 && i < TABS.length ? TABS[i] : null; // no wrap-around
+    };
+    const setPos = (panel, x, animate) => {
+      panel.style.transition = animate ? 'transform 0.2s ease-out, opacity 0.2s ease-out' : 'none';
+      panel.style.transform = x ? `translateX(${x}px)` : '';
+      panel.style.opacity = x ? String(Math.max(0.35, 1 - Math.abs(x) / window.innerWidth)) : '';
+    };
+    const clear = (panel) => {
+      panel.style.transition = panel.style.transform = panel.style.opacity = panel.style.willChange = '';
+    };
+
     document.addEventListener('touchstart', (e) => {
-      start = null;
+      g = null;
       if (e.touches.length !== 1 || !FS.isNarrow()) return;
       const t = e.target;
       if (t.closest('input, select, textarea, dialog, [data-noswipe]') || scrollsSideways(t)) return;
-      start = { x: e.touches[0].clientX, y: e.touches[0].clientY, at: Date.now() };
+      const panel = document.getElementById(`panel-${FS.settings.tab}`);
+      if (!panel || panel.dataset.leaving) return;
+      g = { x: e.touches[0].clientX, y: e.touches[0].clientY, at: performance.now(), dx: 0, mode: null, panel };
     }, { passive: true });
+
+    // Not passive: once the gesture is clearly sideways, stop the page scrolling while dragging.
     document.addEventListener('touchmove', (e) => {
-      if (start && e.touches.length > 1) start = null;
-    }, { passive: true });
-    document.addEventListener('touchcancel', () => (start = null), { passive: true });
-    document.addEventListener('touchend', (e) => {
-      if (!start) return;
-      const p = e.changedTouches[0];
-      const dx = p.clientX - start.x;
-      const dy = p.clientY - start.y;
-      const quick = Date.now() - start.at < 700;
-      start = null;
-      if (!quick || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
-      const i = TABS.indexOf(FS.settings.tab) + (dx < 0 ? 1 : -1);
-      if (i < 0 || i >= TABS.length) return; // no wrap-around: the ends stay put
-      FS.showTab(TABS[i], dx < 0 ? 'next' : 'prev');
-      window.scrollTo(0, 0);
-    }, { passive: true });
+      if (!g) return;
+      if (e.touches.length > 1) {
+        if (g.mode === 'h') setPos(g.panel, 0, true);
+        g = null;
+        return;
+      }
+      const dx = e.touches[0].clientX - g.x;
+      const dy = e.touches[0].clientY - g.y;
+      if (!g.mode) {
+        if (Math.hypot(dx, dy) < 10) return;
+        g.mode = Math.abs(dx) > Math.abs(dy) * 1.3 ? 'h' : 'v';
+        if (g.mode === 'v') return (g = null);
+        g.x += Math.sign(dx) * 10; // start following from here, without a jump
+        g.panel.style.willChange = 'transform, opacity';
+      }
+      if (e.cancelable) e.preventDefault();
+      g.dx = e.touches[0].clientX - g.x;
+      // Rubber band at the ends: there is no tab to go to.
+      const x = neighbour(g.dx) ? g.dx : g.dx * 0.25;
+      if (!reduceMotion.matches) setPos(g.panel, x, false);
+    }, { passive: false });
+
+    const end = (cancelled) => {
+      if (!g || g.mode !== 'h') return (g = null);
+      const { panel, dx, at } = g;
+      g = null;
+      const next = cancelled ? null : neighbour(dx);
+      const speed = Math.abs(dx) / Math.max(1, performance.now() - at); // px per ms
+      const commit = next && (Math.abs(dx) > window.innerWidth * 0.3 || (Math.abs(dx) > 50 && speed > 0.35));
+      if (!commit) {
+        setPos(panel, 0, true);
+        setTimeout(() => clear(panel), 220);
+        return;
+      }
+      const go = () => {
+        delete panel.dataset.leaving;
+        clear(panel);
+        FS.showTab(next, dx < 0 ? 'next' : 'prev');
+        window.scrollTo(0, 0);
+      };
+      if (reduceMotion.matches) return go();
+      panel.dataset.leaving = '1';
+      setPos(panel, Math.sign(dx) * window.innerWidth, true); // finish sliding off, then switch
+      setTimeout(go, 170);
+    };
+    document.addEventListener('touchend', () => end(false), { passive: true });
+    document.addEventListener('touchcancel', () => end(true), { passive: true });
   }
 
   /* ---- Installable app (PWA): manifest, offline service worker, install button ---- */

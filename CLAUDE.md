@@ -1,6 +1,6 @@
 # Fretbored — notes for Claude
 
-Guitar/bass practice web app: Scales, Chords, Arpeggios, Trainer, Circle of Fifths, Metronome, Tuner (tab order).
+Guitar/bass practice web app: Scales, Chords, Arpeggios, Trainer, Circle of Fifths, Tuner, Metronome (tab order).
 Live at https://singularity098.github.io/fretbored/ (GitHub Pages, served from `main`).
 `Requirements.md` is the owner's feature spec; `README.md` is the public overview.
 
@@ -53,7 +53,7 @@ Script order in `index.html` matters:
 | `js/nowbar.js` | Pinned "now viewing" bar shown while a tab's title is out of view — at the top when scrolled past it, at the bottom while it is still below the screen |
 | `js/scales.js`, `chords.js`, `arpeggios.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
 | `js/pitch.js` | `FS.pitch` — McLeod pitch detector with FFT autocorrelation (pure, unit-tested) |
-| `js/app.js` | Tabs (`FS.showTab(tab, from?)`), theme, startup, phone swipe between tabs (`setupSwipe`: ignores swipes starting on sideways-scrolling elements, inputs, dialogs or `[data-noswipe]`). Tabs are initialised lazily on first view |
+| `js/app.js` | Tabs (`FS.showTab(tab, from?)`), theme, startup, phone swipe between tabs (`setupSwipe`: the panel follows the finger once the move is clearly sideways — a non-passive `touchmove` then cancels page scroll — and on release slides off (past 30% width or a quick flick) or springs back; rubber-band at the first/last tab; ignores gestures starting on sideways-scrolling elements, inputs, dialogs or `[data-noswipe]`). Tabs are initialised lazily on first view |
 | `css/style.css` | All styles; colours are CSS variables on `:root` (Dark) and one `:root[data-theme='…']` block per app theme |
 
 Events: `fretboard` (any fretboard setting or tuning changed → re-render), `tab` (tab switched),
