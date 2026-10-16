@@ -14,6 +14,7 @@
     const t = FS.theory;
     const st = FS.settings.arpeggios;
     if (!t.CHORD_BY_ID[st.chordId]) st.chordId = 'maj';
+    if (!['positions', 'sweep'].includes(st.style)) st.style = 'positions';
     let scrollPending = true;
     let playing = null;
 
@@ -28,6 +29,11 @@
       (c.basic ? basicPills : advPills).append(h('button', { class: 'pill', dataset: { id: c.id }, onclick: () => setArp(st.root, c.id) }, c.label));
     }
     const advBtn = h('button', { class: 'btn ghost small', onclick: () => { st.advanced = !st.advanced; FS.save(); render(); } });
+    // Positions: the five CAGED box shapes. Sweep: sweep-picking shapes (6/5/4-string from a root, 3-string).
+    const styleSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Arpeggio style' });
+    for (const [v, label] of [['positions', 'Positions'], ['sweep', 'Sweep']]) {
+      styleSeg.append(h('button', { dataset: { v }, onclick: () => { if (st.style === v) return; stopPlaying(); st.style = v; st.position = 0; scrollPending = true; FS.save(); render(); } }, label));
+    }
     const posPills = h('div', { class: 'pills', role: 'group', 'aria-label': 'Position' });
     const showAll = h('input', { type: 'checkbox', role: 'switch' });
     showAll.addEventListener('change', () => { st.showAll = showAll.checked; FS.save(); renderBoard(); });
@@ -54,7 +60,8 @@
       h('div', { class: 'card controls' },
         h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Root'), rootPills),
         h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Type'), h('div', { class: 'stack' }, h('div', { class: 'inline wrap' }, basicPills, advBtn), advPills)),
-        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Position'), h('div', { class: 'inline wrap' }, posPills,
+        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Style'), styleSeg),
+        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Shape'), h('div', { class: 'inline wrap' }, posPills,
           h('label', { class: 'field switch-field compact' }, h('span', { class: 'field-label' }, 'All arpeggio tones'), h('span', { class: 'switch' }, showAll, h('span', { class: 'slider' })))))
       ),
       h('div', { class: 'card hero arp-hero' },
@@ -86,15 +93,24 @@
     function getShapes() {
       const tuning = FS.currentTuning().notes;
       const frets = FS.settings.fretboard.frets;
-      const key = [tuning.join('.'), frets, st.root, st.chordId].join('|');
+      const key = [tuning.join('.'), frets, st.root, st.chordId, st.style].join('|');
       if (key !== cacheKey) {
         cacheKey = key;
-        shapes = t.generateArpeggioShapes(tuning, frets, st.root, t.CHORD_BY_ID[st.chordId]);
+        const gen = st.style === 'sweep' ? t.generateSweepShapes : t.generateArpeggioShapes;
+        shapes = gen(tuning, frets, st.root, t.CHORD_BY_ID[st.chordId]);
       }
       if (st.position >= shapes.length) st.position = 0;
       return shapes;
     }
     const currentShape = () => getShapes()[st.position] || null;
+
+    // Shape buttons: "A 7" = A shape from fret 7, "5-str 7" = 5-string sweep from fret 7; numbers when unnamed.
+    const pillLabel = (sh, i) => {
+      if (!sh.name) return String(i + 1);
+      return sh.kind === 'sweep' ? `${sh.name.split('-')[0]}-str ${sh.lo}` : `${sh.name[0]} ${sh.lo}`;
+    };
+    // "position 2 (A shape)", "5-string sweep"
+    const shapeLabel = (sh) => (st.style === 'sweep' ? sh.name || `shape ${st.position + 1}` : `position ${st.position + 1}${sh.name ? ` (${sh.name})` : ''}`);
 
     // The order notes are played (and written in the tab).
     function sequence(shape) {
@@ -183,6 +199,7 @@
       advBtn.textContent = st.advanced ? 'Fewer types ▴' : 'Advanced ▾';
       showAll.checked = !!st.showAll;
       orderSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.order));
+      styleSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.style));
       speedSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.speed));
       playBtn.textContent = playing ? '■ Stop' : '▶ Play';
     }
@@ -198,16 +215,16 @@
         posPills.append(
           h('button', {
             class: 'pill' + (i === st.position ? ' active' : ''),
-            title: x.lo === 0 ? `Open position (frets 0–${x.hi})` : `Frets ${x.lo}–${x.hi}`,
+            title: `${x.name ? `${x.name} · ` : ''}${x.lo === 0 ? `open position (frets 0–${x.hi})` : `frets ${x.lo}–${x.hi}`}`,
             onclick: () => { stopPlaying(); st.position = i; scrollPending = true; FS.save(); render(); },
-          }, String(i + 1))
+          }, pillLabel(x, i))
         );
       });
       if (!all.length) posPills.append(h('span', { class: 'muted small' }, 'No shape fits this tuning — showing all arpeggio tones'));
 
       title.innerHTML = '';
       title.append(h('span', { class: 'accent-text' }, t.pretty(sp.root + sp.chord.symbol)), ` ${suffix(sp.chord)}`);
-      sub.textContent = `${sp.chord.labels.map(t.pretty).join(' ')}${shape ? ` · position ${st.position + 1}, ${shape.lo === 0 ? 'open' : `frets ${shape.lo}–${shape.hi}`} · ${shape.notes.length} notes` : ''}`;
+      sub.textContent = `${sp.chord.labels.map(t.pretty).join(' ')}${shape ? ` · ${shapeLabel(shape)}, ${shape.lo === 0 ? 'open' : `frets ${shape.lo}–${shape.hi}`} · ${shape.notes.length} notes` : ''}`;
       chips.innerHTML = '';
       sp.names.forEach((nm, i) => {
         chips.append(h('div', { class: 'chip' + (i === 0 ? ' root' : '') }, h('span', { class: 'chip-note' }, t.pretty(nm)), h('span', { class: 'chip-iv' }, t.pretty(sp.chord.labels[i]))));
@@ -216,7 +233,7 @@
       nowBar.set({
         accent: t.pretty(sp.root + sp.chord.symbol),
         rest: suffix(sp.chord),
-        notes: sp.names.map(t.pretty).join('  ·  ') + (shape ? `   —   Position ${st.position + 1}` : ''),
+        notes: sp.names.map(t.pretty).join('  ·  ') + (shape ? `   —   ${shapeLabel(shape)}` : ''),
         action: shape ? (playing ? '■ Stop' : '▶ Play') : '',
       });
 

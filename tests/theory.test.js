@@ -143,6 +143,49 @@ test('arpeggio shapes', () => {
   assert.deepStrictEqual(open.notes.map((x) => T.SHARP[T.mod12(x.midi)]).join(' '), 'E G C E G C E G');
   // Every chord type in every key has at least one shape on standard guitar.
   for (const c of T.CHORDS) for (let r = 0; r < 12; r++) assert(T.generateArpeggioShapes(std, 22, r, c).length > 0, `${r} ${c.id}`);
+
+  // The five CAGED positions per octave, checked against the standard charts.
+  const tab = (sh) => [0, 1, 2, 3, 4, 5].map((s) => sh.notes.filter((x) => x.s === s).map((x) => x.f).join('.') || 'x').join(' ');
+  const eMaj = T.generateArpeggioShapes(std, 22, 4, T.CHORD_BY_ID.maj);
+  assert.strictEqual(eMaj.slice(0, 5).map((sh) => sh.name).join(', '), 'E shape, D shape, C shape, A shape, G shape');
+  assert.strictEqual(tab(eMaj[0]), '0.4 2 2 1 0 0.4'); // open E
+  assert.strictEqual(tab(eMaj[3]), '7 7.11 9 9 9 7'); // A shape, root on the A string at 7
+  const cMaj = T.generateArpeggioShapes(std, 22, 0, T.CHORD_BY_ID.maj);
+  assert.strictEqual(tab(cMaj[0]), '0.3 3 2 0 1 0.3'); // open C shape
+  assert.strictEqual(tab(cMaj.find((sh) => sh.name === 'E shape')), '8 7.10 10 9 8 8');
+  const aMin = T.generateArpeggioShapes(std, 22, 9, T.CHORD_BY_ID.min);
+  assert.strictEqual(tab(aMin.find((sh) => sh.name === 'E shape')), '5.8 7 7 5 5 5.8');
+});
+
+test('sweep arpeggio shapes', () => {
+  const std = FS.TUNINGS.find((t) => t.id === 'std6').notes;
+  const tab = (sh) => [0, 1, 2, 3, 4, 5].map((s) => sh.notes.filter((x) => x.s === s).map((x) => x.f).join('.') || 'x').join(' ');
+  const find = (shapes, name, lo) => shapes.find((sh) => sh.name === name && sh.lo === lo);
+  const eMaj = T.generateSweepShapes(std, 22, 4, T.CHORD_BY_ID.maj);
+  // The classic 5-string E major sweep: A 7 hammer to 11, roll D G B at 9, e 7–12.
+  assert.strictEqual(tab(find(eMaj, '5-string sweep', 7)), 'x 7.11 9 9 9 7.12');
+  assert.strictEqual(tab(find(eMaj, '6-string sweep', 12)), '12.16 14 14 13 12 12');
+  assert.strictEqual(tab(find(eMaj, '3-string sweep', 7)), 'x x x 9 9 7.12');
+  const aMin = T.generateSweepShapes(std, 22, 9, T.CHORD_BY_ID.min);
+  assert.strictEqual(tab(find(aMin, '5-string sweep', 12)), 'x 12.15 14 14 13 12.17');
+  assert.strictEqual(tab(find(aMin, '6-string sweep', 5)), '5.8 7 7 5 5 5');
+  assert.strictEqual(tab(find(aMin, '3-string sweep', 12)), 'x x x 14 13 12.17');
+  for (const c of T.CHORDS) {
+    for (let r = 0; r < 12; r++) {
+      const shapes = T.generateSweepShapes(std, 22, r, c);
+      assert(shapes.length > 0, `no sweep for ${r} ${c.id}`);
+      for (const sh of shapes) {
+        const midis = sh.notes.map((x) => x.midi);
+        assert.strictEqual(JSON.stringify(midis), JSON.stringify([...midis].sort((a, b) => a - b)), 'ascending');
+        assert(sh.hi - sh.lo <= 6, 'within a 6-fret span');
+        const strings = sh.notes.map((x) => x.s);
+        for (let i = 1; i < strings.length; i++) assert(strings[i] - strings[i - 1] <= 1, 'no skipped strings');
+        for (const s of new Set(strings)) assert(strings.filter((x) => x === s).length <= 2, 'at most two notes per string');
+        assert.strictEqual(strings[strings.length - 1], 5, 'ends on the top string');
+        for (const iv of c.intervals) assert(sh.notes.some((x) => x.iv === T.mod12(iv)), 'every chord tone');
+      }
+    }
+  }
   if (process.env.VERBOSE) {
     for (const sh of shapes) console.log(sh.lo + '-' + sh.hi, sh.notes.map((x) => `${x.s}:${x.f}`).join(' '));
   }

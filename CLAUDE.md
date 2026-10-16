@@ -99,9 +99,17 @@ different. A note's `color` (trainer feedback) still overrides the theme.
 - Voicings: root in the bass, contiguous strings, ≤4 fingers or a barre, 4-fret span; scored and
   clustered into positions. Changing the scoring? Re-run the theory tests (they pin the standard
   open shapes x32010, 022100, 320003, x02210, x32310).
-- Arpeggio shapes: every chord tone inside a 5-fret box (open box = frets 0–4), each pitch once
-  (duplicate pitch keeps the fret nearest the box centre), identical boxes merged, overlapping boxes
-  clustered. Tablature is drawn in `arpeggios.js` (SVG, highest string on top, wraps to width).
+- Arpeggio positions (`generateArpeggioShapes`): CAGED — a 5-fret window anchored on each root
+  (E [R-1,R+3] and G [R-4,R] on the 6th string, A [R,R+4] and C [R-3,R+1] on the 5th, D [R-1,R+3]
+  on the 4th; strings counted from the top six so 7/8-strings work), filled by `boxNotes` (every chord
+  tone once; duplicates keep the fret nearest the centre, ties to the lower fret). Names only when
+  `isStandardLike`. Sliding boxes are the fallback. Theory tests pin standard charts (open E/C, A shape
+  at 7, Am E shape at 5) — re-run them after changing windows.
+- Sweep shapes (`generateSweepShapes`): DFS up the chord tones string by string, ≤2 notes per string,
+  ≤6-fret span, ≤5-fret stretch on one string; root sweeps from strings with ≥3 above end on a root,
+  3-string sweeps end on the start tone an octave up. Scoring avoids doubles on middle strings (and on
+  the first string for 3-string). Tests pin the owner's E major 5-string (A 7·11, 9 9 9, e 7·12).
+- Tablature is drawn in `arpeggios.js` (SVG, highest string on top, wraps to width).
 
 ### Audio — read before touching the metronome
 

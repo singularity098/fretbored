@@ -49,7 +49,9 @@
   - Inversions are named as slash chords (e.g. C/E), and alternative names are shown (e.g. C6 = Am7/C)
 ##### Arpeggios tab
 - Similar to the chords tab: pick any root and an arpeggio type (the same basic and Advanced types as chords)
-- Common arpeggio shapes in positions up the neck (1, 2, 3 …): each position is a 4–5 fret box with every chord tone in it, each pitch once, generated for the current tuning
+- Style: **Positions** or **Sweep** (the owner checked the shapes against the commonly taught ones)
+  - Positions: the five CAGED shapes per octave, each a 5-fret window anchored on a root (E and G shapes on the 6th string, A and C on the 5th, D on the 4th) holding every chord tone once — e.g. E major: E shape 0–4, D 1–5, C 4–8, A 7–11, G 9–12. Buttons read "A 7" (A shape from fret 7). Shape names appear in standard-like tunings; other tunings get numbered positions
+  - Sweep: sweep-picking shapes — 6-, 5- and 4-string sweeps from a root to a root on the top string, and 3-string sweeps on the top three strings from each chord tone to its octave; at most two notes per string (hammer-ons/pull-offs), within a 6-fret span. E.g. E major 5-string: A 7·11, D 9, G 9, B 9, e 7·12. Buttons read "5-str 7"
 - The shape is shown as dots on the shared fretboard (roots highlighted; "All arpeggio tones" shows the rest of the neck faintly) and as tablature in playing order, so it's easy to see how to play it
 - Direction: Up, or Up & down; Play button with Slow/Medium/Fast speed — the current note lights up in the tab and on the fretboard
 - Tap a fretboard note to hear it; the pinned "now viewing" bar shows the arpeggio while scrolling

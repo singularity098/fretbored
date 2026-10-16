@@ -421,45 +421,190 @@
    * middle of the box). Overlapping boxes are clustered and the fullest kept, giving positions up
    * the neck. Returns [{ lo, hi, notes: [{ s, f, midi, iv }] (ascending pitch), roots }].
    */
+  // Chord tones of `chord` (rooted at rootPc) inside frets lo..hi, each pitch once: a duplicate
+  // keeps the fret nearest the window centre (ties go to the lower fret, so open position uses
+  // open strings). Open strings only count when the window starts at the nut.
+  function boxNotes(tuning, rootPc, chord, lo, hi) {
+    const mid = (lo + hi) / 2;
+    const byPitch = new Map();
+    for (let s = 0; s < tuning.length; s++) {
+      for (let f = lo; f <= hi; f++) {
+        if (lo > 0 && f === 0) continue;
+        const midi = tuning[s] + f;
+        const iv = mod12(midi - rootPc);
+        if (!(chord.mask & bit(iv))) continue;
+        const cur = byPitch.get(midi);
+        const d = Math.abs(f - mid);
+        const dc = cur && Math.abs(cur.f - mid);
+        if (!cur || d < dc || (d === dc && f < cur.f)) byPitch.set(midi, { s, f, midi, iv });
+      }
+    }
+    return [...byPitch.values()].sort((a, b) => a.midi - b.midi);
+  }
+
+  const hasAllTones = (notes, chord) => chord.intervals.every((iv) => notes.some((x) => x.iv === mod12(iv)));
+  const shapeOf = (notes, extra) => {
+    const frets = notes.map((x) => x.f);
+    return { lo: Math.min(...frets), hi: Math.max(...frets), notes, roots: notes.filter((x) => x.iv === 0).length, key: notes.map((x) => `${x.s}:${x.f}`).join(' '), ...extra };
+  };
+
+  // Is the top of this tuning laid out like standard guitar tuning (4ths with a 3rd between G and B)?
+  // Then the CAGED shape names apply.
+  function isStandardLike(tuning) {
+    const n = tuning.length;
+    if (n < 6) return false;
+    const steps = [];
+    for (let s = n - 5; s < n; s++) steps.push(tuning[s] - tuning[s - 1]);
+    return steps.join(',') === '5,5,5,4,5';
+  }
+
+  /*
+   * Arpeggio positions, CAGED style: each shape is a fret window anchored on a root note — E and
+   * G shapes on the 6th string, A and C on the 5th, D on the 4th (counted from the top six strings,
+   * so 7/8-string guitars use the same layout) — filled with the chord tones in that window, each
+   * pitch once. That gives the five standard positions per octave, e.g. for E major: E shape 0–4,
+   * D 1–5, C 4–8, A 7–11, G 8–12. Shapes are named only in standard-like tunings.
+   */
+  const CAGED = [
+    { name: 'E', str: 0, from: -1, to: 3 },
+    { name: 'D', str: 2, from: -1, to: 3 },
+    { name: 'C', str: 1, from: -3, to: 1 },
+    { name: 'A', str: 1, from: 0, to: 4 },
+    { name: 'G', str: 0, from: -4, to: 0 },
+  ];
   function generateArpeggioShapes(tuning, numFrets, rootPc, chord) {
     const n = tuning.length;
-    const WIDTH = 4; // frets lo..lo+4
+    const base = Math.max(0, n - 6);
+    const named = isStandardLike(tuning);
+    const seen = new Set();
     const shapes = [];
-    for (let lo = 0; lo + WIDTH <= numFrets; lo++) {
-      const hi = lo + WIDTH;
-      const mid = (lo + hi) / 2;
-      const byPitch = new Map();
-      for (let s = 0; s < n; s++) {
-        for (let f = lo; f <= hi; f++) {
-          if (lo > 0 && f === 0) continue;
-          const midi = tuning[s] + f;
-          const iv = mod12(midi - rootPc);
-          if (!(chord.mask & bit(iv))) continue;
-          const cur = byPitch.get(midi);
-          if (!cur || Math.abs(f - mid) < Math.abs(cur.f - mid)) byPitch.set(midi, { s, f, midi, iv });
+    for (const a of CAGED) {
+      const s = base + a.str;
+      if (s >= n) continue;
+      for (let R = 0; R <= numFrets; R++) {
+        if (mod12(tuning[s] + R - rootPc) !== 0) continue;
+        let lo = R + a.from;
+        let hi = R + a.to; // five frets: R+from … R+to
+        if (lo < 0) (hi -= lo), (lo = 0);
+        hi = Math.min(hi, numFrets);
+        const notes = boxNotes(tuning, rootPc, chord, lo, hi);
+        // Skip stubs cut short by the last fret.
+        if (notes.length < chord.intervals.length + 2 || !hasAllTones(notes, chord)) continue;
+        const sh = shapeOf(notes, { kind: 'position', name: named ? `${a.name} shape` : '' });
+        if (seen.has(sh.key)) continue;
+        seen.add(sh.key);
+        shapes.push(sh);
+      }
+    }
+    // Unusual tunings or chords where no anchored window holds every tone: fall back to sliding boxes.
+    if (!shapes.length) {
+      for (let lo = 0; lo + 4 <= numFrets; lo++) {
+        const notes = boxNotes(tuning, rootPc, chord, lo, lo + 4);
+        if (!notes.some((x) => x.iv === 0) || !hasAllTones(notes, chord)) continue;
+        const sh = shapeOf(notes, { kind: 'position', name: '' });
+        if (seen.has(sh.key)) continue;
+        seen.add(sh.key);
+        shapes.push(sh);
+      }
+    }
+    return shapes.sort((a, b) => a.lo - b.lo || a.hi - b.hi);
+  }
+
+  /*
+   * Sweep-picking shapes: the chord tones climbed in pitch order, string by string, at most two
+   * notes per string (the extra notes are the hammer-ons / pull-offs), within a 6-fret span.
+   * - Root-anchored sweeps start on a root on any string with at least three strings above it and
+   *   run to the top string, ending on a root, e.g. the 5-string E major from the A string:
+   *   A 7·11, D 9, G 9, B 9, e 7·12.
+   * - 3-string sweeps on the top three strings start on each chord tone and climb to its octave.
+   * Two notes on a middle string are allowed (4-note chords need them) but avoided where possible.
+   */
+  function generateSweepShapes(tuning, numFrets, rootPc, chord) {
+    const n = tuning.length;
+    const top = n - 1;
+    const isTone = (midi) => !!(chord.mask & bit(mod12(midi - rootPc)));
+    const nextTone = (midi) => {
+      for (let q = midi + 1; q <= midi + 12; q++) if (isTone(q)) return q;
+      return null;
+    };
+    const MAX_SPAN = 6;
+    const STRETCH = 5; // between two notes on one string
+
+    // closeOn(note): where the sweep should end (a root, or the starting tone an octave up).
+    // threeString: the classic 3-string layout is one note, one note, two notes at the top.
+    function search(s0, f0, closeOn, threeString) {
+      let best = null;
+      const path = [{ s: s0, f: f0, midi: tuning[s0] + f0 }];
+      const score = () => {
+        const frets = path.map((x) => x.f);
+        const span = Math.max(...frets) - Math.min(...frets);
+        const counts = new Map();
+        for (const x of path) counts.set(x.s, (counts.get(x.s) || 0) + 1);
+        let middleDoubles = 0;
+        for (const [s, c] of counts) if (c > 1 && s !== s0 && s !== top) middleDoubles++;
+        const firstDouble = counts.get(s0) > 1;
+        return -middleDoubles * 3 - Math.max(0, span - 5) * 2 + path.length * 0.3 + (threeString ? (firstDouble ? -2 : 0) : firstDouble ? 0.5 : 0);
+      };
+      const walk = () => {
+        const last = path[path.length - 1];
+        const frets = path.map((x) => x.f);
+        if (last.s === top && closeOn(last)) {
+          const notes = path.map((x) => ({ ...x, iv: mod12(x.midi - rootPc) }));
+          if (hasAllTones(notes, chord)) {
+            const sc = score();
+            if (!best || sc > best.sc) best = { sc, notes };
+          }
         }
-      }
-      const notes = [...byPitch.values()].sort((a, b) => a.midi - b.midi);
-      const roots = notes.filter((x) => x.iv === 0).length;
-      if (roots < 1 || notes.length < chord.intervals.length) continue;
-      // Prefer full boxes with two or more roots, starting near the low strings.
-      const score = notes.length + roots * 2 - (notes[0].s > 1 ? 2 : 0);
-      const key = notes.map((x) => `${x.s}:${x.f}`).join(' ');
-      if (shapes.length && shapes[shapes.length - 1].key === key) continue; // same notes as the previous box
-      const frets = notes.map((x) => x.f);
-      shapes.push({ lo: Math.min(...frets), hi: Math.max(...frets), notes, roots, score, key });
+        const p = nextTone(last.midi);
+        if (p === null) return;
+        const onString = path.filter((x) => x.s === last.s);
+        const options = [];
+        if (onString.length < 2) options.push({ s: last.s, f: p - tuning[last.s] });
+        if (last.s < top) options.push({ s: last.s + 1, f: p - tuning[last.s + 1] });
+        for (const o of options) {
+          if (o.f < 0 || o.f > numFrets) continue;
+          if (o.s === last.s && o.f - onString[0].f > STRETCH) continue;
+          const lo = Math.min(...frets, o.f);
+          const hi = Math.max(...frets, o.f);
+          if (hi - lo > MAX_SPAN) continue;
+          path.push({ s: o.s, f: o.f, midi: p });
+          walk();
+          path.pop();
+        }
+      };
+      walk();
+      return best;
     }
-    const picked = [];
-    let start = -Infinity;
-    for (const sh of shapes) {
-      if (sh.lo - start < 3 && picked.length) {
-        if (sh.score > picked[picked.length - 1].score) picked[picked.length - 1] = sh;
-      } else {
-        start = sh.lo;
-        picked.push(sh);
+
+    const out = [];
+    const seen = new Set();
+    const add = (found, name, order) => {
+      if (!found) return;
+      const sh = shapeOf(found.notes, { kind: 'sweep', name, order });
+      if (seen.has(sh.key)) return;
+      seen.add(sh.key);
+      out.push(sh);
+    };
+    for (let s = 0; s <= n - 4; s++) {
+      for (let f = 0; f <= numFrets; f++) {
+        if (mod12(tuning[s] + f - rootPc) !== 0) continue;
+        add(search(s, f, (x) => mod12(x.midi - rootPc) === 0), `${n - s}-string sweep`, s);
       }
     }
-    return picked;
+    if (n >= 3) {
+      for (let f = 0; f <= numFrets; f++) {
+        const midi = tuning[n - 3] + f;
+        if (!isTone(midi)) continue;
+        add(search(n - 3, f, (x) => mod12(x.midi - midi) === 0 && x.midi > midi, true), '3-string sweep', n);
+      }
+    }
+    // Drop a shape that is just part of a bigger one of the same kind.
+    const keys = (sh) => new Set(sh.notes.map((x) => `${x.s}:${x.f}`));
+    const kept = out.filter((a) => {
+      const ka = keys(a);
+      return !out.some((b) => b !== a && b.name === a.name && b.notes.length > a.notes.length && [...ka].every((k) => keys(b).has(k)));
+    });
+    return kept.sort((a, b) => a.order - b.order || a.lo - b.lo);
   }
 
   /* ---------------------------------------------------------------- Modes */
@@ -503,6 +648,7 @@
     identifyChord,
     generateVoicings,
     generateArpeggioShapes,
+    generateSweepShapes,
     MODES,
     MODE_SCALE,
   };

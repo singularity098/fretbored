@@ -4,7 +4,7 @@ Guitar scales, chords, circle of fifths and a precise metronome — in the brows
 
 - **Scales**: any key, ~55 scales across Common / Rare / Exotic. Click frets to add or remove notes and Fretbored works out which scale you've made; right-click or long-press to change the root.
 - **Chords**: 12 core chord types plus ~25 advanced ones, generated as playable voicings for your tuning in several positions up the neck. Edit the shape and the chord is re-identified (including slash chords).
-- **Arpeggios**: arpeggio shapes for every chord type in positions up the neck, shown on the fretboard and as tablature, with up/down playback that follows along in the tab.
+- **Arpeggios**: arpeggio shapes for every chord type — the five CAGED positions or sweep-picking shapes (6/5/4/3-string) — shown on the fretboard and as tablature, with up/down playback that follows along in the tab.
 - **Circle of Fifths**: pick a key and mode to see diatonic chords with Roman numerals, key signature and related keys.
 - **Trainer**: fretboard note games — name the highlighted note, or find every place a note occurs — with fret/string practice areas, naturals-only, weak-spot focus, sound, a 60-second challenge, and saved progress (7-day history, accuracy by note and string).
 - **Tuner**: traditional needle and strobe modes, instrument (per-string, using your tuning) or chromatic, adjustable A4 reference and reference tones.

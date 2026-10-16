@@ -197,9 +197,19 @@ const check = (label, actual, expected) => {
     // Open C: low E 0 3, A 3, D 2, G 0, B 1, high E 0 3 — up and back down.
     check(`${P} arpeggios: open-position tab (up & down)`, await tabFrets(), '0 3 3 2 0 1 0 3 0 1 0 2 3 3 0');
     check(`${P} arpeggios: dots match tab`, String(await page.$$eval('#panel-arpeggios .fretboard .note', (n) => n.length)), '8');
-    await page.click('#panel-arpeggios .pill[title^="Frets 5"]');
+    check(`${P} arpeggios: CAGED positions`, await page.$$eval('#panel-arpeggios [aria-label="Position"] .pill', (b) => b.slice(0, 5).map((x) => x.title.split(' ·')[0]).join(' ')), 'C shape A shape G shape E shape D shape');
+    // Sweep style: E major 5-string sweep from the A string (7 hammer 11, 9 9 9, 7 hammer 12).
+    await page.click('#panel-arpeggios .seg[aria-label="Arpeggio style"] button:has-text("Sweep")');
+    await page.click('#panel-arpeggios .root-pills .pill[data-pc="4"]');
+    await page.click('#panel-arpeggios [aria-label="Position"] .pill[title^="5-string sweep · frets 7"]');
     await page.waitForTimeout(150);
-    check(`${P} arpeggios: position 2 tab`, await tabFrets(), /^8 7 5 5 5 8 8/);
+    check(`${P} arpeggios: E major 5-string sweep tab`, await tabFrets(), /^7 11 9 9 9 7 12 /);
+    check(`${P} arpeggios: sweep named in the subtitle`, await page.textContent('#panel-arpeggios .hero-sub'), /5-string sweep, frets 7–12/);
+    await page.click('#panel-arpeggios .seg[aria-label="Arpeggio style"] button:has-text("Positions")');
+    await page.click('#panel-arpeggios .root-pills .pill[data-pc="0"]');
+    await page.click('#panel-arpeggios .pill[title^="G shape"]');
+    await page.waitForTimeout(150);
+    check(`${P} arpeggios: G shape tab`, await tabFrets(), /^8 7 5 5 5 8 8/);
     await page.click('#panel-arpeggios .play-btn');
     await page.waitForTimeout(700);
     check(`${P} arpeggios: playback highlights the tab`, String(await page.$$eval('#panel-arpeggios .tab-note.on', (n) => n.length)), '1');
