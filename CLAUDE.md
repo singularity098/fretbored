@@ -67,7 +67,8 @@ fifths: the wheel comes first (Key/Mode controls and info sit beside it on deskt
 Settings: add new keys to `DEFAULTS` in `store.js`. `merge()` drops unknown keys and replaces
 values whose type doesn't match the default (a default of `null` accepts anything). A nested
 object default only keeps the keys it lists, so free-form maps (e.g. `trainer.stats`) must default
-to `null` and be initialised in code. To change a default for people who already have the old one
+to `null` and be initialised in code (`trainer.stats` = `{ notes, pos, days, streak }`; `streak` =
+`{ count, last, best }` for the 50-notes-a-day streak, rebuilt from `days` by `initStreak` when missing). To change a default for people who already have the old one
 saved, bump a version key and migrate once in `store.js` (see `trainer.version`).
 
 The app icon (`assets/icon.svg`) uses the same Circle colours. It is duplicated inline in

@@ -74,6 +74,7 @@
 - Tracks questions asked, correct answers, accuracy and the current/best streak; Reset score button
 - 60-second challenge: count correct answers in a minute; the best score per game is saved
 - Progress saved on the device: questions and accuracy for each of the last 7 days (bar chart), accuracy by note and by string with weak ones flagged; Reset progress button
+- Daily streak: answering at least 50 notes in a day (right or wrong) keeps it going. Shown as "🔥 N" in the score row ("Day streak", next to "In a row" = correct answers in a row) and in a Daily streak section with today's progress bar towards 50 and the best streak; a toast celebrates the 50th note; days that reached 50 are highlighted in the 7-day chart. The streak stays alive until the end of the following day. It is stored separately from the 90-day history (so it can run longer) and was rebuilt from that history for progress saved before streaks existed
 - Immediate feedback: correct answers flash green and move on; a wrong answer marks the pick red, shows the right note on the fretboard and button, then moves on
 - Keyboard: letter keys A–G answer naturals, Shift+letter answers the sharp
 

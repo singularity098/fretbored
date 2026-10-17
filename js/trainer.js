@@ -21,6 +21,12 @@
   const BAD = 'var(--danger)';
 
   const dayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // The local day before a 'YYYY-MM-DD' key.
+  const prevDay = (key) => {
+    const [y, m, d] = key.split('-').map(Number);
+    return dayKey(new Date(y, m - 1, d - 1));
+  };
+  const DAILY_GOAL = 50; // answered notes in a day that keep the daily streak going
 
   FS.initTrainer = function (panel) {
     const t = FS.theory;
@@ -28,6 +34,33 @@
     if (!st.stats || typeof st.stats !== 'object') st.stats = {};
     for (const k of ['notes', 'pos', 'days']) if (!st.stats[k] || typeof st.stats[k] !== 'object') st.stats[k] = {};
     if (!st.bestTimed || typeof st.bestTimed !== 'object') st.bestTimed = { name: 0, find: 0 };
+    initStreak();
+
+    /*
+     * Daily streak: stats.streak = { count, last, best } — count of consecutive days that reached
+     * DAILY_GOAL, ending on `last` (a day key). Kept separately so it can outlive the 90-day
+     * history; rebuilt from that history the first time (progress saved before streaks existed).
+     */
+    function initStreak() {
+      const S = st.stats;
+      if (S.streak && typeof S.streak === 'object' && typeof S.streak.count === 'number') return;
+      let run = 0;
+      let last = null;
+      let best = 0;
+      for (const k of Object.keys(S.days).sort()) {
+        if (S.days[k][0] < DAILY_GOAL) continue;
+        run = last && prevDay(k) === last ? run + 1 : 1;
+        last = k;
+        best = Math.max(best, run);
+      }
+      S.streak = { count: run, last, best };
+    }
+    // Still alive until the end of today, even if today's goal isn't reached yet.
+    function currentStreak() {
+      const s = st.stats.streak;
+      const today = dayKey(new Date());
+      return s.last === today || s.last === prevDay(today) ? s.count : 0;
+    }
 
     const game = {
       q: null, // name mode: { s, f, pc, midi }; find mode: { pc, cells: [...] }
@@ -137,7 +170,8 @@
     const sAsked = stat('Questions');
     const sCorrect = stat('Correct');
     const sPct = stat('Accuracy');
-    const sStreak = stat('Streak');
+    const sStreak = stat('In a row');
+    const sDaily = stat('Day streak');
     const challengeBtn = h('button', { class: 'btn primary small', onclick: () => (timedRunning() ? stopTimed(false) : startTimed()) });
     const resetBtn = h('button', { class: 'btn ghost small', onclick: () => resetScore() }, 'Reset score');
     const timedClock = h('div', { class: 'tr-clock' });
@@ -159,6 +193,13 @@
     const answersTitle = h('h3', { class: 'section-title' }, 'Which note is it?');
 
     const history = h('div', { class: 'tr-history', role: 'img' });
+    const streakNum = h('div', { class: 'tr-streak-num' });
+    const streakBest = h('div', { class: 'tr-streak-best muted small' });
+    const goalBar = h('div', { class: 'tr-goal-bar' });
+    const goalText = h('div', { class: 'tr-goal-text small' });
+    const streakBox = h('div', { class: 'tr-streak' },
+      h('div', { class: 'tr-streak-main' }, streakNum, streakBest),
+      h('div', { class: 'tr-goal' }, h('div', { class: 'tr-goal-track', role: 'progressbar', 'aria-label': `Today's goal: ${DAILY_GOAL} notes`, 'aria-valuemin': 0, 'aria-valuemax': DAILY_GOAL }, goalBar), goalText));
     const noteGrid = h('div', { class: 'tr-acc-grid' });
     const stringGrid = h('div', { class: 'tr-acc-grid' });
     const resetStatsBtn = h('button', { class: 'btn ghost small', onclick: () => resetStats() }, 'Reset progress');
@@ -178,7 +219,7 @@
       ),
       h('div', { class: 'card tr-score' },
         h('div', { class: 'tr-score-row' },
-          h('div', { class: 'tr-stats' }, sAsked.el, sCorrect.el, sPct.el, sStreak.el),
+          h('div', { class: 'tr-stats' }, sAsked.el, sCorrect.el, sPct.el, sStreak.el, sDaily.el),
           h('div', { class: 'tr-score-actions' }, challengeBtn, resetBtn)),
         timedBox
       ),
@@ -190,7 +231,9 @@
         answers
       ),
       h('div', { class: 'card tr-progress' },
-        h('div', { class: 'section-head' }, h('h3', { class: 'section-title' }, 'Last 7 days'), resetStatsBtn),
+        h('div', { class: 'section-head' }, h('h3', { class: 'section-title' }, 'Daily streak'), resetStatsBtn),
+        streakBox,
+        h('h3', { class: 'section-title' }, 'Last 7 days'),
         history,
         h('h3', { class: 'section-title' }, 'Accuracy by note'),
         noteGrid,
@@ -330,7 +373,16 @@
       };
       bump(S.notes, pc);
       if (pos) bump(S.pos, pos);
-      bump(S.days, dayKey(new Date()));
+      const today = dayKey(new Date());
+      bump(S.days, today);
+      if (S.days[today][0] === DAILY_GOAL) {
+        // Today's goal just reached: extend the streak (or start a new one).
+        const sk = S.streak;
+        sk.count = sk.last === prevDay(today) ? sk.count + 1 : sk.last === today ? sk.count : 1;
+        sk.last = today;
+        sk.best = Math.max(sk.best, sk.count);
+        FS.toast(`🔥 ${DAILY_GOAL} notes today — ${sk.count}-day streak!`);
+      }
       // Keep 90 days of history.
       const cutoff = dayKey(new Date(Date.now() - 90 * 864e5));
       for (const k of Object.keys(S.days)) if (k < cutoff) delete S.days[k];
@@ -346,8 +398,9 @@
     }
 
     function resetStats() {
-      if (!window.confirm('Reset all saved Trainer progress (history, accuracy and best challenge scores)?')) return;
+      if (!window.confirm('Reset all saved Trainer progress (history, daily streak, accuracy and best challenge scores)?')) return;
       st.stats = { notes: {}, pos: {}, days: {} };
+      initStreak();
       st.bestTimed = { name: 0, find: 0 };
       FS.save();
       renderProgress();
@@ -524,6 +577,16 @@
 
     function renderProgress() {
       const S = st.stats;
+      // Daily streak and today's progress towards the goal.
+      const streak = currentStreak();
+      const todayN = (S.days[dayKey(new Date())] || [0])[0];
+      streakNum.textContent = streak ? `🔥 ${streak}-day streak` : 'No streak yet';
+      streakBest.textContent = S.streak.best ? `Best: ${S.streak.best} day${S.streak.best === 1 ? '' : 's'}` : `Answer ${DAILY_GOAL} notes in a day to start one`;
+      goalBar.style.width = `${Math.min(1, todayN / DAILY_GOAL) * 100}%`;
+      goalBar.parentElement.setAttribute('aria-valuenow', String(Math.min(todayN, DAILY_GOAL)));
+      streakBox.classList.toggle('done', todayN >= DAILY_GOAL);
+      goalText.textContent = todayN >= DAILY_GOAL ? `✓ Today: ${todayN} notes — goal reached` : `Today: ${todayN} / ${DAILY_GOAL} notes${streak && S.streak.last !== dayKey(new Date()) ? ' — keep the streak going' : ''}`;
+      sDaily.v.textContent = streak ? `🔥 ${streak}` : '0';
       // Last 7 days: bar height = questions answered; accuracy written underneath.
       const days = [];
       for (let i = 6; i >= 0; i--) {
@@ -538,8 +601,8 @@
         const pct = x.asked ? Math.round((100 * x.correct) / x.asked) : null;
         history.append(
           h('div', {
-            class: 'tr-day',
-            title: `${x.d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}: ${x.asked} question${x.asked === 1 ? '' : 's'}${pct !== null ? `, ${pct}% correct` : ''}`,
+            class: 'tr-day' + (x.asked >= DAILY_GOAL ? ' goal' : ''),
+            title: `${x.d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}: ${x.asked} question${x.asked === 1 ? '' : 's'}${pct !== null ? `, ${pct}% correct` : ''}${x.asked >= DAILY_GOAL ? ' — daily goal reached' : ''}`,
           },
             h('div', { class: 'tr-day-count' }, x.asked ? String(x.asked) : ''),
             h('div', { class: 'tr-day-track' }, h('div', { class: 'tr-day-bar', style: `height:${(x.asked / max) * 100}%` })),

@@ -288,7 +288,7 @@ const check = (label, actual, expected) => {
     await page.click(`#panel-trainer .tr-answer[data-pc="${((await askedPc()) + 1) % 12}"]`);
     check(`${P} trainer: wrong answer`, await trPrompt(), /^✗ It’s/);
     const stats = await page.$$eval('#panel-trainer .tr-stat-val', (els) => els.map((e) => e.textContent).join(' '));
-    check(`${P} trainer: score (asked correct accuracy streak)`, stats, /^2 1 50% 0 \(best 1\)$/);
+    check(`${P} trainer: score (asked correct accuracy in-a-row day-streak)`, stats, /^2 1 50% 0 \(best 1\) 0$/);
     await page.waitForTimeout(1800);
 
     await page.click('#panel-trainer .pill:has-text("5 – 9")');
@@ -459,6 +459,39 @@ const check = (label, actual, expected) => {
     await page.clock.runFor(61000);
     check('[challenge] result', await page.textContent('#panel-trainer .tr-prompt-text'), /^⏱ Time! 3 correct out of 3 — new best!/);
     check('[challenge] best saved', await page.evaluate(() => String(JSON.parse(localStorage.getItem('fretbored:v1')).trainer.bestTimed.name)), '3');
+    await ctx.close();
+  }
+
+  // Daily streak: 50 notes a day. History from before streaks existed is turned into a streak;
+  // reaching today's 50th note extends it.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => failures.push(`[streak] page error: ${e.message}`));
+    await page.goto(url + '#trainer');
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      const key = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+      const saved = JSON.parse(localStorage.getItem('fretbored:v1'));
+      // 4 days ago 80 (then a gap), 2 days ago 55, yesterday 60, today 49 so far.
+      saved.trainer.stats = { notes: {}, pos: {}, days: { [key(4)]: [80, 70], [key(2)]: [55, 50], [key(1)]: [60, 58], [key(0)]: [49, 45] } };
+      saved.trainer.mode = 'name';
+      localStorage.setItem('fretbored:v1', JSON.stringify(saved));
+    });
+    await page.reload();
+    await page.waitForTimeout(400);
+    check('[streak] rebuilt from history', (await page.textContent('#panel-trainer .tr-streak-num')).trim(), '🔥 2-day streak');
+    check('[streak] today so far', (await page.textContent('#panel-trainer .tr-goal-text')).trim(), 'Today: 49 / 50 notes — keep the streak going');
+    const pc = await page.evaluate(() => +document.querySelector('#panel-trainer .note').dataset.midi % 12);
+    await page.click(`#panel-trainer .tr-answer[data-pc="${pc}"]`);
+    await page.waitForTimeout(200);
+    check('[streak] 50th note extends it', (await page.textContent('#panel-trainer .tr-streak-num')).trim(), '🔥 3-day streak');
+    check('[streak] goal reached', (await page.textContent('#panel-trainer .tr-goal-text')).trim(), '✓ Today: 50 notes — goal reached');
+    check('[streak] score card', (await page.textContent('#panel-trainer .tr-stats')).includes('🔥 3'), true);
+    check('[streak] best', (await page.textContent('#panel-trainer .tr-streak-best')).trim(), 'Best: 3 days');
+    check('[streak] goal days highlighted', String(await page.$$eval('#panel-trainer .tr-day.goal', (d) => d.length)), '4');
+    await page.waitForTimeout(300);
+    check('[streak] saved', await page.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem('fretbored:v1')).trainer.stats.streak.count)), '3');
     await ctx.close();
   }
   await browser.close();

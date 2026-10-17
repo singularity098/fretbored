@@ -1084,3 +1084,14 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
 .sync-row .sync-slider { flex: 1; min-width: 120px; }
 .sync-info { gap: 10px; align-items: center; min-height: 30px; }
 .sync-val { font-variant-numeric: tabular-nums; color: var(--text-2); font-size: 13px; }
+
+/* Trainer daily streak */
+.tr-streak { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--border); }
+.tr-streak-main { min-width: 150px; }
+.tr-streak-num { font-size: 20px; font-weight: 800; }
+.tr-goal { flex: 1; min-width: 180px; display: flex; flex-direction: column; gap: 6px; }
+.tr-goal-track { height: 10px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.tr-goal-bar { height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width 0.3s; }
+.tr-goal-text { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.tr-streak.done .tr-goal-text { color: var(--good); font-weight: 650; }
+.tr-day.goal .tr-day-bar { background: var(--accent); }
