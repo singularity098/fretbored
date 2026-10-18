@@ -19,6 +19,8 @@
     const st = FS.settings.arpeggios;
     if (!t.CHORD_BY_ID[st.chordId]) st.chordId = 'maj';
     if (!['positions', 'sweep'].includes(st.style)) st.style = 'positions';
+    if (!['up', 'down', 'updown'].includes(st.order)) st.order = 'updown';
+    if (!SPEEDS.some((x) => x[0] === st.speed)) st.speed = 'medium';
     let scrollPending = true;
     let playing = null;
     // A custom shape (notes added/removed on the fretboard): st.custom = [[string, fret], …].
@@ -46,7 +48,7 @@
     showAll.addEventListener('change', () => { st.showAll = showAll.checked; FS.save(); renderBoard(); });
 
     const orderSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Direction' });
-    for (const [v, label] of [['up', 'Up'], ['updown', 'Up & down']]) {
+    for (const [v, label] of [['up', 'Up'], ['down', 'Down'], ['updown', 'Up & down']]) {
       orderSeg.append(h('button', { dataset: { v }, onclick: () => { st.order = v; FS.save(); stopPlaying(); render(); } }, label));
     }
     const speedSeg = h('div', { class: 'seg speed-seg', role: 'group', 'aria-label': 'Playback speed' });
@@ -144,6 +146,7 @@
     function sequence(shape) {
       if (!shape) return [];
       const up = shape.notes;
+      if (st.order === 'down') return up.slice().reverse(); // highest note first
       return st.order === 'updown' ? up.concat(up.slice(0, -1).reverse()) : up.slice();
     }
 
@@ -415,7 +418,7 @@
       });
       parts.push('</svg>');
       tabHost.innerHTML = parts.join('');
-      tabHost.setAttribute('aria-label', `Tablature, ${st.order === 'updown' ? 'up and down' : 'ascending'}: ` + seq.map((x) => `string ${n - x.s} fret ${x.f}`).join(', '));
+      tabHost.setAttribute('aria-label', `Tablature, ${st.order === 'updown' ? 'up and down' : st.order === 'down' ? 'descending' : 'ascending'}: ` + seq.map((x) => `string ${n - x.s} fret ${x.f}`).join(', '));
       tabHost.title = `Notes: ${seq.map((x) => t.pretty(sp.nameOf[t.mod12(x.midi)])).join(' ')}`;
     }
 

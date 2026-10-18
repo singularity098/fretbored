@@ -92,17 +92,26 @@
   if (!['clean', 'overdrive'].includes(FS.settings.fretboard.tone)) FS.settings.fretboard.tone = 'clean';
   FS.DEFAULTS = DEFAULTS;
 
+  // Saves are batched (150 ms) — but phones pause or close a backgrounded app without running
+  // pending timers, which lost changes made just before leaving (e.g. the arpeggio speed). So a
+  // pending save is also written at once when the page is hidden or unloaded.
   let timer = null;
+  function writeNow() {
+    clearTimeout(timer);
+    timer = null;
+    try {
+      localStorage.setItem(KEY, JSON.stringify(FS.settings));
+    } catch (e) {
+      /* storage unavailable (private mode etc.) — settings just won't persist */
+    }
+  }
   FS.save = function () {
     clearTimeout(timer);
-    timer = setTimeout(() => {
-      try {
-        localStorage.setItem(KEY, JSON.stringify(FS.settings));
-      } catch (e) {
-        /* storage unavailable (private mode etc.) — settings just won't persist */
-      }
-    }, 150);
+    timer = setTimeout(writeNow, 150);
   };
+  const flush = () => timer && writeNow();
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flush());
+  window.addEventListener('pagehide', flush);
 
   /* ---- Backup: export / import everything stored in the browser ---- */
 
@@ -116,6 +125,7 @@
     const settings = isObj(data) && data.app === 'fretbored' ? data.settings : isObj(data) && isObj(data.fretboard) ? data : null;
     if (!isObj(settings)) return 'This file is not a Fretbored backup.';
     clearTimeout(timer); // a pending save of the current settings must not overwrite the import
+    timer = null; // …nor the save-on-hide when the page reloads
     try {
       localStorage.setItem(KEY, JSON.stringify(merge(DEFAULTS, settings)));
     } catch (e) {

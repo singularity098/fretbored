@@ -170,6 +170,9 @@ node tests/pwa.browser.js      # installable app: installability, precache list,
   Firefox-specific bugs can't be reproduced here — say so and ask the owner to verify on device.
 - For touch long-press and swipe tests use CDP `Input.dispatchTouchEvent`, and scroll the target into view
   first (the fretboard is below the fold on phones).
+- `FS.save()` batches writes (150 ms) but also flushes a pending save on `visibilitychange`→hidden and
+  `pagehide` — phones freeze backgrounded pages and drop pending timers (lost the arpeggio speed).
+  `FS.importData` clears the pending save so the reload's flush can't overwrite an import.
 - Seeding localStorage in a test: wait for the page's debounced save (150 ms) first, and `reload()`
   afterwards — `goto` to the same page with a different `#hash` does not reload it.
 - Long timers (the 60-second challenge) are tested with Playwright's fake clock (`page.clock`).

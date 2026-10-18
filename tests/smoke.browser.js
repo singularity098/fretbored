@@ -575,6 +575,24 @@ const check = (label, actual, expected) => {
     await ctx.close();
   }
 
+  // Arpeggio playback settings survive leaving the app straight after a change (saved on hide/unload,
+  // not only after the 150 ms batching delay), and the Down direction plays the shape top to bottom.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => failures.push(`[arp-settings] page error: ${e.message}`));
+    await page.goto(url + '#arpeggios');
+    await page.waitForTimeout(300);
+    await page.click('#panel-arpeggios .seg[aria-label="Direction"] button:has-text("Down")');
+    await page.click('#panel-arpeggios .seg[aria-label="Playback speed"] button:has-text("Shred")');
+    check('[arp-settings] Down plays top to bottom', await page.$$eval('#panel-arpeggios .tab-note text', (t) => t.map((x) => x.textContent).join(' ')), '3 0 1 0 2 3 3 0');
+    await page.reload(); // immediately — before the batched save would have run
+    await page.waitForTimeout(400);
+    check('[arp-settings] speed and direction kept', await page.evaluate(() => `${FS.settings.arpeggios.speed} ${FS.settings.arpeggios.order}`), 'shred down');
+    check('[arp-settings] buttons show them', await page.$$eval('#panel-arpeggios .seg button.active', (b) => b.map((x) => x.textContent).filter((x) => ['Down', 'Shred'].includes(x)).join(' ')), 'Down Shred');
+    await ctx.close();
+  }
+
   // Backup: export everything to a file, import it back (here: an edited copy) after a confirm.
   {
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, acceptDownloads: true });
