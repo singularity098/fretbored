@@ -98,6 +98,26 @@
     }, 150);
   };
 
+  /* ---- Backup: export / import everything stored in the browser ---- */
+
+  // Everything the app keeps is in FS.settings (one localStorage key), including the Trainer's
+  // history and daily streak.
+  FS.exportData = () => ({ app: 'fretbored', format: 1, exported: new Date().toISOString(), settings: FS.settings });
+
+  // Replaces the saved settings with a backup (checked against DEFAULTS like any saved data).
+  // Returns an error message, or null — the caller then reloads so every tab starts fresh.
+  FS.importData = function (data) {
+    const settings = isObj(data) && data.app === 'fretbored' ? data.settings : isObj(data) && isObj(data.fretboard) ? data : null;
+    if (!isObj(settings)) return 'This file is not a Fretbored backup.';
+    clearTimeout(timer); // a pending save of the current settings must not overwrite the import
+    try {
+      localStorage.setItem(KEY, JSON.stringify(merge(DEFAULTS, settings)));
+    } catch (e) {
+      return 'The browser would not let the app save (storage unavailable).';
+    }
+    return null;
+  };
+
   const listeners = {};
   FS.on = (evt, fn) => (listeners[evt] = listeners[evt] || []).push(fn);
   FS.emit = (evt, data) => (listeners[evt] || []).forEach((fn) => fn(data));

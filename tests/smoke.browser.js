@@ -462,6 +462,49 @@ const check = (label, actual, expected) => {
     await ctx.close();
   }
 
+  // Backup: export everything to a file, import it back (here: an edited copy) after a confirm.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, acceptDownloads: true });
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => failures.push(`[backup] page error: ${e.message}`));
+    await page.goto(url + '#trainer');
+    await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      FS.settings.trainer.stats.days['2026-01-02'] = [60, 55];
+      FS.settings.trainer.stats.streak = { count: 4, last: '2026-01-02', best: 9 };
+      FS.save();
+    });
+    await page.click('#data-btn');
+    const [download] = await Promise.all([page.waitForEvent('download'), page.click('#data-menu [data-act="export"]')]);
+    check('[backup] file name', download.suggestedFilename(), /^fretbored-backup-\d{4}-\d{2}-\d{2}\.json$/);
+    const file = await download.path();
+    const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
+    check('[backup] export has the trainer history and streak', `${backup.app} ${JSON.stringify(backup.settings.trainer.stats.days['2026-01-02'])} best ${backup.settings.trainer.stats.streak.best}`, 'fretbored [60,55] best 9');
+    // Import an edited copy: different theme and streak.
+    backup.settings.theme = 'dracula';
+    backup.settings.trainer.stats.streak.best = 12;
+    const edited = path.join(os.tmpdir(), `fretbored-backup-test-${process.pid}.json`);
+    fs.writeFileSync(edited, JSON.stringify(backup));
+    page.once('dialog', (d) => d.accept());
+    await page.click('#data-btn');
+    await page.click('#data-menu [data-act="import"]');
+    await page.setInputFiles('#import-file', edited);
+    await page.waitForLoadState('load');
+    await page.waitForTimeout(500);
+    check('[backup] imported theme', await page.$eval('html', (e) => e.dataset.theme), 'dracula');
+    check('[backup] imported streak', (await page.textContent('#panel-trainer .tr-streak-best')).trim(), 'Best: 12 days');
+    check('[backup] confirmation', (await page.textContent('#toast')).trim(), 'Backup imported');
+    // A file that is not a backup is refused and changes nothing.
+    fs.writeFileSync(edited, JSON.stringify({ hello: 1 }));
+    page.once('dialog', (d) => d.accept());
+    await page.setInputFiles('#import-file', edited);
+    await page.waitForTimeout(400);
+    check('[backup] wrong file refused', (await page.textContent('#toast')).trim(), 'This file is not a Fretbored backup.');
+    check('[backup] nothing changed', await page.$eval('html', (e) => e.dataset.theme), 'dracula');
+    fs.unlinkSync(edited);
+    await ctx.close();
+  }
+
   // Daily streak: 50 notes a day. History from before streaks existed is turned into a streak;
   // reaching today's 50th note extends it.
   {

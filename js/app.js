@@ -42,16 +42,21 @@
           FS.save();
           applyTheme();
           FS.emit('fretboard');
-          close();
-          btn.focus();
         },
       }, FS.h('span', { class: 'theme-swatch', 'aria-hidden': 'true', style: `--sw-bg:${theme.sw[0]};--sw-card:${theme.sw[1]};--sw-accent:${theme.sw[2]}` }), theme.name));
     }
     applyTheme();
+    popupMenu(btn, menu, () => menu.querySelector('[aria-checked="true"]'));
+  }
+
+  // Header pop-up menu: opens under its button, closes on outside tap / Escape, arrow keys move.
+  // Returns close().
+  function popupMenu(btn, menu, focusFirst) {
+    const items = () => [...menu.querySelectorAll('[role^="menuitem"]')];
     const open = () => {
       menu.hidden = false;
       btn.setAttribute('aria-expanded', 'true');
-      (menu.querySelector('[aria-checked="true"]') || menu.firstElementChild).focus();
+      ((focusFirst && focusFirst()) || items()[0]).focus();
     };
     const close = () => {
       menu.hidden = true;
@@ -59,19 +64,81 @@
     };
     btn.addEventListener('click', () => (menu.hidden ? open() : close()));
     document.addEventListener('pointerdown', (e) => {
-      if (!menu.hidden && !e.target.closest('.theme-picker')) close();
+      if (!menu.hidden && !btn.parentElement.contains(e.target)) close();
+    });
+    menu.addEventListener('click', (e) => {
+      if (e.target.closest('[role^="menuitem"]')) {
+        close();
+        btn.focus();
+      }
     });
     menu.addEventListener('keydown', (e) => {
-      const items = [...menu.children];
-      const i = items.indexOf(document.activeElement);
+      const list = items();
+      const i = list.indexOf(document.activeElement);
       if (e.key === 'Escape') {
         close();
         btn.focus();
       } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
-        items[(i + (e.key === 'ArrowDown' ? 1 : items.length - 1)) % items.length].focus();
+        list[(i + (e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length].focus();
       }
     });
+    return close;
+  }
+
+  // Back up / restore everything stored in the browser as a JSON file.
+  function setupDataMenu() {
+    const btn = document.getElementById('data-btn');
+    const menu = document.getElementById('data-menu');
+    const file = document.getElementById('import-file');
+    popupMenu(btn, menu);
+    menu.querySelector('[data-act="export"]').addEventListener('click', () => {
+      const data = FS.exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `fretbored-backup-${data.exported.slice(0, 10)}.json`;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      FS.toast('Backup saved — import it on another device to carry everything over');
+    });
+    menu.querySelector('[data-act="import"]').addEventListener('click', () => file.click());
+    file.addEventListener('change', async () => {
+      const f = file.files[0];
+      file.value = '';
+      if (!f) return;
+      let data;
+      try {
+        data = JSON.parse(await f.text());
+      } catch (e) {
+        FS.toast('That file is not a Fretbored backup');
+        return;
+      }
+      const when = data && data.exported ? new Date(data.exported).toLocaleString() : null;
+      const ok = window.confirm(`Import this backup${when ? ` from ${when}` : ''}?\n\nIt replaces everything saved on this device: settings, themes, custom tunings, Trainer history and daily streak.`);
+      if (!ok) return;
+      const err = FS.importData(data);
+      if (err) {
+        FS.toast(err);
+        return;
+      }
+      try {
+        sessionStorage.setItem('fretbored:imported', '1');
+      } catch (e) {
+        /* only used for the confirmation toast */
+      }
+      location.reload();
+    });
+    try {
+      if (sessionStorage.getItem('fretbored:imported')) {
+        sessionStorage.removeItem('fretbored:imported');
+        setTimeout(() => FS.toast('Backup imported'), 300);
+      }
+    } catch (e) {
+      /* sessionStorage unavailable */
+    }
   }
 
   // Panels are built the first time they are shown so hidden fretboards don't render at width 0.
@@ -246,6 +313,7 @@
     });
 
     setupThemeMenu();
+    setupDataMenu();
 
     const fromHash = location.hash.slice(1);
     FS.showTab(TABS.includes(fromHash) ? fromHash : FS.settings.tab);
