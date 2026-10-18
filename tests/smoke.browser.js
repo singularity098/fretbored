@@ -199,6 +199,27 @@ const check = (label, actual, expected) => {
     // Open C: low E 0 3, A 3, D 2, G 0, B 1, high E 0 3 — up and back down.
     check(`${P} arpeggios: open-position tab (up & down)`, await tabFrets(), '0 3 3 2 0 1 0 3 0 1 0 2 3 3 0');
     check(`${P} arpeggios: dots match tab`, String(await page.$$eval('#panel-arpeggios .fretboard .note', (n) => n.length)), '8');
+    // Editing: tap notes to remove/add them; the arpeggio is identified (C → C5 → Am7, also C6).
+    const arpTitle = async () => (await page.textContent('#panel-arpeggios .hero-title')).trim();
+    const tapArp = async (s, f) => {
+      await page.$eval(`#panel-arpeggios .cell[data-s="${s}"][data-f="${f}"]`, (el) => el.scrollIntoView({ block: 'center' }));
+      await page.click(`#panel-arpeggios .cell[data-s="${s}"][data-f="${f}"]`);
+      await page.waitForTimeout(120);
+    };
+    for (const [s, f] of [[0, 0], [2, 2], [5, 0]]) await tapArp(s, f);
+    check(`${P} arpeggios: removing the 3rds gives C5`, await arpTitle(), 'C5 arpeggio');
+    check(`${P} arpeggios: custom shape selected`, (await page.textContent('#panel-arpeggios [aria-label="Position"] .pill.active')).trim(), 'Custom');
+    for (const [s, f] of [[0, 0], [2, 2], [5, 0], [3, 2]]) await tapArp(s, f);
+    check(`${P} arpeggios: adding A names it Am7`, await arpTitle(), 'Am7 arpeggio');
+    check(`${P} arpeggios: alternative name offered`, (await page.textContent('#panel-arpeggios .match')).trim(), 'AlsoC6');
+    await page.click('#panel-arpeggios .match .chip-btn');
+    await page.waitForTimeout(120);
+    check(`${P} arpeggios: alternative chosen`, await arpTitle(), 'C6 arpeggio');
+    check(`${P} arpeggios: custom tab follows the notes`, await tabFrets(), /^0 3 3 2 0 2 1 0 3 /);
+    await page.click('#panel-arpeggios .root-pills .pill[data-pc="0"]');
+    await page.click('#panel-arpeggios .pill[data-id="maj"]');
+    await page.waitForTimeout(120);
+    check(`${P} arpeggios: picking a type leaves the custom shape`, `${await arpTitle()} ${await tabFrets()}`, /^C major arpeggio 0 3 3 2 0 1 0 3 /);
     check(`${P} arpeggios: CAGED positions`, await page.$$eval('#panel-arpeggios [aria-label="Position"] .pill', (b) => b.slice(0, 5).map((x) => x.title.split(' ·')[0]).join(' ')), 'C shape A shape G shape E shape D shape');
     // Sweep style: E major 5-string sweep from the A string (7 hammer 11, 9 9 9, 7 hammer 12).
     await page.click('#panel-arpeggios .seg[aria-label="Arpeggio style"] button:has-text("Sweep")');

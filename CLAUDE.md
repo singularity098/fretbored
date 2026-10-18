@@ -110,6 +110,7 @@ different. A note's `color` (trainer feedback) still overrides the theme.
   ≤6-fret span, ≤5-fret stretch on one string; root sweeps from strings with ≥3 above end on a root,
   3-string sweeps end on the start tone an octave up. Scoring avoids doubles on middle strings (and on
   the first string for 3-string). Tests pin the owner's E major 5-string (A 7·11, 9 9 9, e 7·12).
+- Arpeggios tab editing: `arpeggios.custom` = `[[string, fret], …]` (null = generated shape); `currentShape()` returns it as a shape (`kind: 'custom'`), `identify(preferRoot?)` names it with `identifyChord` (lowest note as bass), long-press = `rootNote`. Root/type/style/position clear it; a tuning change drops it (like Chords).
 - Tablature is drawn in `arpeggios.js` (SVG, highest string on top, wraps to width).
 
 ### Audio — read before touching the metronome

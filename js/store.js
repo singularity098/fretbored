@@ -21,7 +21,7 @@
     },
     scales: { root: 0, scaleId: 'major', pcs: null, category: 'common', lastScale: null },
     chords: { root: 0, chordId: 'maj', position: 0, advanced: false, showAll: false, custom: null },
-    arpeggios: { root: 0, chordId: 'maj', style: 'positions', position: 0, advanced: false, showAll: false, order: 'updown', speed: 'medium' },
+    arpeggios: { root: 0, chordId: 'maj', style: 'positions', position: 0, custom: null, advanced: false, showAll: false, order: 'updown', speed: 'medium' },
     circle: { tonic: 0, mode: 0 },
     trainer: {
       version: 0, // bumped to migrate saved trainer settings once

@@ -55,7 +55,8 @@
   - Sweep: sweep-picking shapes — 6-, 5- and 4-string sweeps from a root to a root on the top string, and 3-string sweeps on the top three strings from each chord tone to its octave; at most two notes per string (hammer-ons/pull-offs), within a 6-fret span. E.g. E major 5-string: A 7·11, D 9, G 9, B 9, e 7·12. Buttons read "5-str 7"
 - The shape is shown as dots on the shared fretboard (roots highlighted; "All arpeggio tones" shows the rest of the neck faintly) and as tablature in playing order, so it's easy to see how to play it
 - Direction: Up, or Up & down; Play button with six speeds — Slow, Medium, Fast, Faster, Shred (≈13 notes/s, 16ths at 200 BPM) and Max shred (20 notes/s, 16ths at 300 BPM); two rows of three on phones — the current note lights up in the tab and on the fretboard
-- Tap a fretboard note to hear it; the pinned "now viewing" bar shows the arpeggio while scrolling
+- Edit the shape like on the Scales and Chords tabs: tap a fretboard note to add it (it plays) or tap a note in the shape to remove it. The shape becomes "Custom" and the arpeggio is identified from its notes (lowest note preferred as the root); other names for the same notes are offered under "Also" (tap one to switch), and long-press / right-click a note to make it the root. Chord tones missing from the shape are greyed; notes that match nothing show "? Unknown arpeggio". Tab and playback follow the custom notes (low to high). Choosing a root, type, style or position goes back to the generated shapes; a custom shape is remembered, and dropped if the tuning changes
+- The pinned "now viewing" bar shows the arpeggio while scrolling
 
 ##### Circle of Fifths
 - A beautiful circle of fifths is displayed

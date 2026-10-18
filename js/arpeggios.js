@@ -21,6 +21,9 @@
     if (!['positions', 'sweep'].includes(st.style)) st.style = 'positions';
     let scrollPending = true;
     let playing = null;
+    // A custom shape (notes added/removed on the fretboard): st.custom = [[string, fret], …].
+    if (st.custom && !(Array.isArray(st.custom) && st.custom.every((x) => Array.isArray(x) && x.length === 2 && x.every(Number.isInteger)))) st.custom = null;
+    let unknown = false; // custom notes that match no arpeggio in the library
 
     /* ---- DOM ---- */
     const rootPills = h('div', { class: 'pills root-pills', role: 'group', 'aria-label': 'Root' });
@@ -36,7 +39,7 @@
     // Positions: the five CAGED box shapes. Sweep: sweep-picking shapes (6/5/4-string from a root, 3-string).
     const styleSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Arpeggio style' });
     for (const [v, label] of [['positions', 'Positions'], ['sweep', 'Sweep']]) {
-      styleSeg.append(h('button', { dataset: { v }, onclick: () => { if (st.style === v) return; stopPlaying(); st.style = v; st.position = 0; scrollPending = true; FS.save(); render(); } }, label));
+      styleSeg.append(h('button', { dataset: { v }, onclick: () => { if (st.style === v && !st.custom) return; stopPlaying(); st.style = v; st.position = 0; st.custom = null; unknown = false; scrollPending = true; FS.save(); render(); } }, label));
     }
     const posPills = h('div', { class: 'pills', role: 'group', 'aria-label': 'Position' });
     const showAll = h('input', { type: 'checkbox', role: 'switch' });
@@ -54,6 +57,7 @@
     const title = h('h2', { class: 'hero-title' });
     const sub = h('div', { class: 'hero-sub' });
     const chips = h('div', { class: 'note-chips' });
+    const alts = h('div', { class: 'match' });
     const playBtn = h('button', { class: 'btn primary play-btn', onclick: () => (playing ? stopPlaying() : play()) });
     const tabHost = h('div', { class: 'tab-host', role: 'img' });
 
@@ -71,6 +75,7 @@
       h('div', { class: 'card hero arp-hero' },
         h('div', { class: 'hero-head' }, h('div', null, title, sub), h('div', { class: 'hero-actions' }, playBtn)),
         chips,
+        alts,
         h('div', { class: 'inline wrap gap-lg' },
           h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Direction'), orderSeg),
           h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Speed'), speedSeg)),
@@ -80,14 +85,14 @@
       h('div', { class: 'card board-card' },
         fbControls,
         fbHost,
-        h('p', { class: 'hint' }, 'Tap a note on the fretboard to hear it · numbers in the tab are frets, top line is the highest string')
+        h('p', { class: 'hint' }, 'Tap the fretboard to add or remove notes — the arpeggio is named as you go · long-press (or right-click) a note to make it the root · numbers in the tab are frets, top line is the highest string')
       )
     );
 
     // The fretboard is always the first section on a tab (owner's layout rule).
     panel.prepend(panel.querySelector('.board-card'));
     FS.createFretboardControls(fbControls);
-    const board = new FS.Fretboard(fbHost, { onToggle: tapNote, onRoot: tapNote });
+    const board = new FS.Fretboard(fbHost, { onToggle: tapNote, onRoot: rootNote });
     const nowBar = FS.createNowBar(panel, panel.querySelector('.arp-hero'), () => (playing ? stopPlaying() : play()));
 
     /* ---- Shapes ---- */
@@ -106,7 +111,26 @@
       if (st.position >= shapes.length) st.position = 0;
       return shapes;
     }
-    const currentShape = () => getShapes()[st.position] || null;
+    // The custom shape (if any) or the selected generated one.
+    function currentShape() {
+      if (st.custom) return customShape();
+      return getShapes()[st.position] || null;
+    }
+    function customShape() {
+      const tuning = FS.currentTuning().notes;
+      const notes = st.custom
+        .filter(([s, f]) => s >= 0 && s < tuning.length && f >= 0 && f <= FS.settings.fretboard.frets)
+        .map(([s, f]) => ({ s, f, midi: tuning[s] + f, iv: t.mod12(tuning[s] + f - st.root) }))
+        .sort((a, b) => a.midi - b.midi || a.s - b.s);
+      if (!notes.length) return { kind: 'custom', name: 'Custom shape', notes, lo: 0, hi: 0, empty: true };
+      const frets = notes.map((x) => x.f);
+      return { kind: 'custom', name: 'Custom shape', notes, lo: Math.min(...frets), hi: Math.max(...frets) };
+    }
+    const customMask = () => customShape().notes.reduce((m, x) => m | t.bit(t.mod12(x.midi)), 0);
+    const lowestPc = () => {
+      const n = customShape().notes;
+      return n.length ? t.mod12(n[0].midi) : null;
+    };
 
     // Shape buttons: "A 7" = A shape from fret 7, "5-str 7" = 5-string sweep from fret 7; numbers when unnamed.
     const pillLabel = (sh, i) => {
@@ -114,7 +138,7 @@
       return sh.kind === 'sweep' ? `${sh.name.split('-')[0]}-str ${sh.lo}` : `${sh.name[0]} ${sh.lo}`;
     };
     // "position 2 (A shape)", "5-string sweep"
-    const shapeLabel = (sh) => (st.style === 'sweep' ? sh.name || `shape ${st.position + 1}` : `position ${st.position + 1}${sh.name ? ` (${sh.name})` : ''}`);
+    const shapeLabel = (sh) => (sh.kind === 'custom' ? 'custom shape' : st.style === 'sweep' ? sh.name || `shape ${st.position + 1}` : `position ${st.position + 1}${sh.name ? ` (${sh.name})` : ''}`);
 
     // The order notes are played (and written in the tab).
     function sequence(shape) {
@@ -145,16 +169,65 @@
       st.root = root;
       st.chordId = id;
       st.position = 0;
+      st.custom = null;
+      unknown = false;
       if (!t.CHORD_BY_ID[id].basic) st.advanced = true;
       scrollPending = true;
       FS.save();
       render();
     }
 
+    // Tap: add the note to the shape, or remove it if it's already there; then identify the arpeggio.
     function tapNote(s, f) {
+      stopPlaying();
       const midi = FS.currentTuning().notes[s] + f;
-      FS.audio.playNote(midi + bump(), FS.audio.ctx().currentTime + 0.02, 1.2, 0.5);
-      board.flash(midi, 300);
+      const cur = currentShape();
+      const list = cur ? cur.notes.map((x) => [x.s, x.f]) : [];
+      const i = list.findIndex(([a, b]) => a === s && b === f);
+      if (i >= 0) list.splice(i, 1);
+      else {
+        list.push([s, f]);
+        FS.audio.playNote(midi + bump(), FS.audio.ctx().currentTime + 0.02, 1.2, 0.5);
+      }
+      st.custom = list;
+      identify();
+      FS.save();
+      render();
+      if (i < 0) board.flash(midi, 300);
+    }
+
+    // Name the custom notes (lowest note preferred as the root, like the Chords tab).
+    function identify(preferRoot) {
+      const mask = customMask();
+      const all = t.identifyChord(mask, lowestPc());
+      const found = preferRoot === undefined ? all[0] : all.find((x) => x.root === preferRoot && x.omitted === 0) || all.find((x) => x.root === preferRoot);
+      if (!found) {
+        if (preferRoot === undefined) unknown = true;
+        return false;
+      }
+      const changed = found.root !== st.root || found.chord.id !== st.chordId || unknown;
+      st.root = found.root;
+      st.chordId = found.chord.id;
+      unknown = false;
+      if (!found.chord.basic) st.advanced = true;
+      if (changed) FS.toast(`Matched ${t.pretty(spelled().root + found.chord.symbol)} ${suffix(found.chord)}`);
+      return true;
+    }
+
+    // Long-press / right-click: read the shape with this note as the root (e.g. C6 → Am7).
+    function rootNote(s, f) {
+      const pc = t.mod12(FS.currentTuning().notes[s] + f);
+      if (!st.custom) {
+        const cur = currentShape();
+        st.custom = cur ? cur.notes.map((x) => [x.s, x.f]) : [];
+      }
+      if (!(customMask() & t.bit(pc))) {
+        tapNote(s, f); // not in the shape yet: add it first
+        if (!(customMask() & t.bit(pc))) return;
+      }
+      if (!identify(pc)) FS.toast(`No arpeggio with ${t.pretty(t.pcLabel(pc))} as the root fits these notes`);
+      FS.save();
+      render();
     }
     const bump = () => (FS.currentTuning().notes.length <= 5 ? 12 : 0); // bass is muddy on phone speakers
 
@@ -194,11 +267,11 @@
     function renderControls() {
       const sp = spelled();
       rootPills.querySelectorAll('.pill').forEach((b) => {
-        const active = +b.dataset.pc === st.root;
+        const active = +b.dataset.pc === st.root && !unknown;
         b.classList.toggle('active', active);
         b.textContent = active ? t.pretty(sp.root) : t.pretty(t.pcLabel(+b.dataset.pc));
       });
-      [basicPills, advPills].forEach((g) => g.querySelectorAll('.pill').forEach((b) => b.classList.toggle('active', b.dataset.id === st.chordId)));
+      [basicPills, advPills].forEach((g) => g.querySelectorAll('.pill').forEach((b) => b.classList.toggle('active', b.dataset.id === st.chordId && !unknown)));
       advPills.hidden = !st.advanced;
       advBtn.textContent = st.advanced ? 'Fewer types ▴' : 'Advanced ▾';
       showAll.checked = !!st.showAll;
@@ -218,27 +291,49 @@
       all.forEach((x, i) => {
         posPills.append(
           h('button', {
-            class: 'pill' + (i === st.position ? ' active' : ''),
+            class: 'pill' + (!st.custom && i === st.position ? ' active' : ''),
             title: `${x.name ? `${x.name} · ` : ''}${x.lo === 0 ? `open position (frets 0–${x.hi})` : `frets ${x.lo}–${x.hi}`}`,
-            onclick: () => { stopPlaying(); st.position = i; scrollPending = true; FS.save(); render(); },
+            onclick: () => { stopPlaying(); st.position = i; st.custom = null; unknown = false; scrollPending = true; FS.save(); render(); },
           }, pillLabel(x, i))
         );
       });
-      if (!all.length) posPills.append(h('span', { class: 'muted small' }, 'No shape fits this tuning — showing all arpeggio tones'));
+      if (st.custom) posPills.append(h('button', { class: 'pill active custom', title: 'Your own shape — pick a position to go back' }, 'Custom'));
+      if (!all.length && !st.custom) posPills.append(h('span', { class: 'muted small' }, 'No shape fits this tuning — showing all arpeggio tones'));
 
       title.innerHTML = '';
-      title.append(h('span', { class: 'accent-text' }, t.pretty(sp.root + sp.chord.symbol)), ` ${suffix(sp.chord)}`);
-      sub.textContent = `${sp.chord.labels.map(t.pretty).join(' ')}${shape ? ` · ${shapeLabel(shape)}, ${shape.lo === 0 ? 'open' : `frets ${shape.lo}–${shape.hi}`} · ${shape.notes.length} notes` : ''}`;
       chips.innerHTML = '';
-      sp.names.forEach((nm, i) => {
-        chips.append(h('div', { class: 'chip' + (i === 0 ? ' root' : '') }, h('span', { class: 'chip-note' }, t.pretty(nm)), h('span', { class: 'chip-iv' }, t.pretty(sp.chord.labels[i]))));
-      });
+      alts.innerHTML = '';
+      const where = shape && !shape.empty ? ` · ${shapeLabel(shape)}, ${shape.lo === 0 ? 'open' : `frets ${shape.lo}–${shape.hi}`} · ${shape.notes.length} note${shape.notes.length === 1 ? '' : 's'}` : '';
+      const usedPcs = shape ? [...new Set(shape.notes.map((x) => t.mod12(x.midi)))] : [];
+      if (unknown) {
+        title.append(h('span', { class: 'accent-text' }, '?'), shape && shape.empty ? ' Empty shape' : ' Unknown arpeggio');
+        sub.textContent = shape && shape.empty ? 'Tap the fretboard to add notes' : `These notes don’t match an arpeggio in the library${where}`;
+        usedPcs.sort((a, b) => a - b).forEach((pc) => chips.append(h('div', { class: 'chip' }, h('span', { class: 'chip-note' }, t.pretty(t.pcLabel(pc))))));
+      } else {
+        title.append(h('span', { class: 'accent-text' }, t.pretty(sp.root + sp.chord.symbol)), ` ${suffix(sp.chord)}`);
+        sub.textContent = `${sp.chord.labels.map(t.pretty).join(' ')}${where}`;
+        sp.names.forEach((nm, i) => {
+          const missing = st.custom && !usedPcs.includes(t.mod12(st.root + sp.chord.intervals[i]));
+          chips.append(h('div', { class: 'chip' + (i === 0 ? ' root' : '') + (missing ? ' missing' : ''), title: missing ? 'Not in this shape' : '' }, h('span', { class: 'chip-note' }, t.pretty(nm)), h('span', { class: 'chip-iv' }, t.pretty(sp.chord.labels[i]))));
+        });
+        // Other names for the same notes (e.g. C6 = Am7) — long-press a note to switch.
+        if (st.custom) {
+          const others = t.identifyChord(customMask(), lowestPc()).filter((x) => !(x.root === st.root && x.chord.id === st.chordId) && x.omitted === 0);
+          if (others.length) {
+            alts.append(h('span', { class: 'match-label' }, 'Also'));
+            for (const o of others.slice(0, 3)) {
+              const rn = t.spell(o.root, o.chord.intervals, o.chord.labels).root;
+              alts.append(h('button', { class: 'chip-btn', title: 'Use this name', onclick: () => { identify(o.root); FS.save(); render(); } }, t.pretty(rn + o.chord.symbol)));
+            }
+          }
+        }
+      }
 
       nowBar.set({
-        accent: t.pretty(sp.root + sp.chord.symbol),
-        rest: suffix(sp.chord),
-        notes: sp.names.map(t.pretty).join('  ·  ') + (shape ? `   —   ${shapeLabel(shape)}` : ''),
-        action: shape ? (playing ? '■ Stop' : '▶ Play') : '',
+        accent: unknown ? '?' : t.pretty(sp.root + sp.chord.symbol),
+        rest: unknown ? 'Unknown arpeggio' : suffix(sp.chord),
+        notes: (unknown ? usedPcs.map((pc) => t.pretty(t.pcLabel(pc))) : sp.names.map(t.pretty)).join('  ·  ') + (shape ? `   —   ${shapeLabel(shape)}` : ''),
+        action: shape && !shape.empty ? (playing ? '■ Stop' : '▶ Play') : '',
       });
 
       renderTab(shape);
@@ -251,17 +346,17 @@
       const nFrets = FS.settings.fretboard.frets;
       const useIv = FS.settings.fretboard.labels === 'intervals';
       const shape = currentShape();
-      const label = (pc) => (useIv ? sp.ivOf[pc] : sp.nameOf[pc]);
+      const label = (pc) => (unknown || !sp.nameOf[pc] ? t.pretty(t.pcLabel(pc).split('/')[0]) : useIv ? sp.ivOf[pc] : sp.nameOf[pc]);
       const notes = [];
       const inShape = new Set();
       if (shape) {
         for (const x of shape.notes) {
           inShape.add(`${x.s}:${x.f}`);
           const pc = t.mod12(x.midi);
-          notes.push({ s: x.s, f: x.f, kind: x.iv === 0 ? 'root' : 'note', label: label(pc), iv: x.iv });
+          notes.push({ s: x.s, f: x.f, kind: x.iv === 0 && !unknown ? 'root' : 'note', label: label(pc), iv: x.iv });
         }
       }
-      if (st.showAll || !shape) {
+      if (!unknown && (st.showAll || !shape)) {
         const mask = t.rotate(sp.chord.mask, st.root);
         tuning.forEach((open, s) => {
           for (let f = 0; f <= nFrets; f++) {
@@ -271,7 +366,7 @@
           }
         });
       }
-      board.setModel({ notes, muted: [], focus: shape ? { lo: shape.lo, hi: shape.hi } : null }); // vertical boards crop to it
+      board.setModel({ notes, muted: [], focus: shape && !shape.empty && !st.custom ? { lo: shape.lo, hi: shape.hi } : null }); // vertical boards crop to it
       if (scrollPending && shape && fbHost.clientWidth) {
         scrollPending = false;
         board.scrollToFret(Math.round((shape.lo + shape.hi) / 2));
@@ -341,10 +436,19 @@
       }
     }).observe(tabHost);
 
+    let tuningKey = FS.currentTuning().notes.join('.');
     FS.on('fretboard', () => {
       stopPlaying();
+      const k = FS.currentTuning().notes.join('.');
+      if (k !== tuningKey) {
+        // A custom shape means different notes in another tuning.
+        tuningKey = k;
+        st.custom = null;
+        unknown = false;
+      }
       render();
     });
+    if (st.custom) identify();
     FS.on('tab', (tab) => {
       if (tab !== 'arpeggios') stopPlaying();
     });
