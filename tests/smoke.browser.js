@@ -114,7 +114,7 @@ const check = (label, actual, expected) => {
     await page.click('#theme-menu [data-id="dark"]');
     await page.waitForTimeout(100);
 
-    // Fretboard settings: folded by default; opening it on one tab opens it on the others and is remembered.
+    // Guitar settings: folded by default; opening it on one tab opens it on the others and is remembered.
     const fbOpen = (tab) => page.$eval(`#panel-${tab} .fb-settings`, (d) => d.open);
     check(`${P} fretboard settings folded by default`, String(await fbOpen('scales')), 'false');
     check(`${P} fretboard settings header shows tuning`, (await page.textContent('#panel-scales .fb-settings-tuning')).trim(), 'Standard · E A D G B E');
@@ -189,6 +189,39 @@ const check = (label, actual, expected) => {
     await page.click('#panel-chords .cell[data-s="2"][data-f="3"]');
     await page.waitForTimeout(150);
     check(`${P} chords: edited shape identified`, await page.textContent('#panel-chords .hero-title'), 'Cadd11');
+    // Guitar settings: renamed header, tone choice (clean / overdriven / distortion) used when strumming.
+    check(`${P} guitar settings header`, (await page.textContent('#panel-chords .fb-settings-title')).trim(), 'Guitar settings');
+    await page.click('#panel-chords .fb-settings summary');
+    await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Distortion")');
+    await page.click('#panel-chords .hero-actions button');
+    await page.waitForTimeout(300);
+    check(`${P} tone saved`, await page.evaluate(() => FS.settings.fretboard.tone), 'distortion');
+    // Driven tones stay roughly as loud as clean (rendered offline: a strummed E chord).
+    const levels = await page.evaluate(async () => {
+      const sr = 44100;
+      const rms = {};
+      for (const id of ['clean', 'overdrive', 'distortion']) {
+        const oc = new OfflineAudioContext(1, sr, sr);
+        const tone = FS.audio.buildTone(oc, id, oc.destination);
+        [40, 47, 52, 56, 59, 64].forEach((m, i) => {
+          const f = 440 * 2 ** ((m - 69) / 12);
+          const o = oc.createOscillator();
+          o.type = 'sawtooth';
+          o.frequency.value = f;
+          const g = oc.createGain();
+          g.gain.setValueAtTime(0.3, i * 0.02);
+          g.gain.exponentialRampToValueAtTime(0.01, 1);
+          o.connect(g).connect(tone.input);
+          o.start(i * 0.02);
+        });
+        const d = (await oc.startRendering()).getChannelData(0);
+        rms[id] = Math.sqrt(d.reduce((a, v) => a + v * v, 0) / d.length);
+      }
+      return [rms.overdrive / rms.clean, rms.distortion / rms.clean].map((x) => x.toFixed(2));
+    });
+    check(`${P} tone levels vs clean (overdrive, distortion)`, String(levels.every((x) => x > 0.6 && x < 2)) + ` (${levels.join(', ')})`, /^true /);
+    await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Clean")');
+    await page.click('#panel-chords .fb-settings summary');
     await shot('chords');
 
     // Arpeggios: C major open position, tab in playing order, position switch, playback highlight.

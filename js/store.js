@@ -13,6 +13,7 @@
       frets: 22,
       labels: 'notes',
       wood: 'ebony',
+      tone: 'clean', // guitar sound: clean | overdrive | distortion
       orientation: 'horizontal',
       controlsOpen: false, // fretboard settings section expanded (shared by all tabs)
       lefty: false,

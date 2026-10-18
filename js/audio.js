@@ -80,7 +80,75 @@
     midis.forEach(getPluck);
   }
 
-  function playNote(midi, when, duration, gain) {
+  /*
+   * Guitar tones. Notes go through one shared amp chain (so a strummed chord distorts as a whole,
+   * like a real amp): pre-gain → wave-shaper (soft clip for overdrive, hard for distortion) →
+   * EQ / speaker-cabinet low-pass → output level matched to the clean sound.
+   */
+  FS.TONES = [
+    ['clean', 'Clean'],
+    ['overdrive', 'Overdriven'],
+    ['distortion', 'Distortion'],
+  ];
+  let toneChain = null; // { id, input }
+
+  function clipCurve(kind) {
+    const n = 2048;
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / (n - 1) - 1;
+      if (kind === 'overdrive') curve[i] = Math.tanh(2.5 * x) / Math.tanh(2.5); // warm, tube-like
+      else {
+        // Harder, slightly asymmetric clip for distortion.
+        const y = x >= 0 ? x : x * 0.85;
+        curve[i] = Math.tanh(9 * y) / Math.tanh(9);
+      }
+    }
+    return curve;
+  }
+
+  function buildTone(c, id, dest) {
+    dest = dest || master;
+    if (id === 'clean') return { id, input: dest };
+    const drive = id === 'overdrive';
+    const input = c.createGain();
+    const hp = c.createBiquadFilter(); // tighten the lows before clipping
+    hp.type = 'highpass';
+    hp.frequency.value = drive ? 70 : 110;
+    const pre = c.createGain();
+    pre.gain.value = drive ? 3 : 9;
+    const shaper = c.createWaveShaper();
+    shaper.curve = clipCurve(id);
+    shaper.oversample = '4x';
+    const mid = c.createBiquadFilter(); // distortion: scooped mids; overdrive: a little mid push
+    mid.type = 'peaking';
+    mid.frequency.value = drive ? 900 : 650;
+    mid.Q.value = 0.9;
+    mid.gain.value = drive ? 2.5 : -5;
+    const cab = c.createBiquadFilter(); // 4x12-ish speaker roll-off
+    cab.type = 'lowpass';
+    cab.frequency.value = drive ? 4800 : 4000;
+    cab.Q.value = 0.8;
+    const out = c.createGain();
+    out.gain.value = drive ? 0.27 : 0.17; // roughly level-matched to clean (a little louder, as amps are)
+    input.connect(hp).connect(pre).connect(shaper).connect(mid).connect(cab).connect(out).connect(dest);
+    return { id, input, nodes: [input, hp, pre, shaper, mid, cab, out] };
+  }
+
+  function toneInput(c) {
+    const fb = FS.settings && FS.settings.fretboard;
+    const id = fb && FS.TONES.some((x) => x[0] === fb.tone) ? fb.tone : 'clean';
+    if (!toneChain || toneChain.id !== id) {
+      const old = toneChain;
+      toneChain = buildTone(c, id);
+      // Let notes already playing through the old chain ring out, then free it.
+      if (old && old.nodes) setTimeout(() => old.nodes.forEach((n) => n.disconnect()), 4000);
+    }
+    return toneChain.input;
+  }
+
+  // opts.clean: bypass the guitar tone (the tuner's reference notes).
+  function playNote(midi, when, duration, gain, opts) {
     const c = getCtx();
     const p = getPluck(midi);
     const src = c.createBufferSource();
@@ -92,7 +160,7 @@
     g.gain.setValueAtTime(gain === undefined ? 0.5 : gain, t);
     g.gain.setValueAtTime(gain === undefined ? 0.5 : gain, t + dur);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
-    src.connect(g).connect(master);
+    src.connect(g).connect(opts && opts.clean ? master : toneInput(c));
     src.start(t);
     src.stop(t + dur + 0.3);
     return src;
@@ -177,5 +245,6 @@
     return src;
   }
 
-  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, playBuffer, samples };
+  // buildTone is exposed so tests can render a tone offline and compare levels.
+  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, playBuffer, samples, buildTone };
 })();

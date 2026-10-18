@@ -411,7 +411,7 @@
       else if (st.target === 'instrument') midi = notes[st.lock >= 0 ? st.lock : 0];
       else midi = 69;
       const ctx = FS.audio.ctx();
-      FS.audio.playNote(midi + a4Offset(), ctx.currentTime + 0.03, 2.2, 0.5);
+      FS.audio.playNote(midi + a4Offset(), ctx.currentTime + 0.03, 2.2, 0.5, { clean: true }); // reference tones stay clean
     }
 
     /* ---------------------------------------------------------------- Lifecycle */
