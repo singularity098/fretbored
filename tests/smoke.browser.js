@@ -214,6 +214,19 @@ const check = (label, actual, expected) => {
     await page.waitForTimeout(700);
     check(`${P} arpeggios: playback highlights the tab`, String(await page.$$eval('#panel-arpeggios .tab-note.on', (n) => n.length)), '1');
     await page.click('#panel-arpeggios .play-btn');
+    // Max shred: notes scheduled 50 ms apart on the audio clock.
+    await page.evaluate(() => {
+      window.__notes = [];
+      const orig = FS.audio.playNote;
+      window.__origPlayNote = orig;
+      FS.audio.playNote = (midi, when, ...rest) => (window.__notes.push(when), orig(midi, when, ...rest));
+    });
+    await page.click('#panel-arpeggios .seg[aria-label="Playback speed"] button:has-text("Max shred")');
+    await page.click('#panel-arpeggios .play-btn');
+    const gaps = await page.evaluate(() => { FS.audio.playNote = window.__origPlayNote; return [...new Set(window.__notes.slice(1).map((t, i) => Math.round((t - window.__notes[i]) * 1000)))].join(','); });
+    check(`${P} arpeggios: max shred spacing (ms)`, gaps, '50');
+    await page.waitForTimeout(1300);
+    await page.click('#panel-arpeggios .seg[aria-label="Playback speed"] button:has-text("Medium")');
     await shot('arpeggios');
 
     // Vertical board (phones): Chords and Arpeggios crop to the shape, with a whole-neck toggle.

@@ -4,10 +4,14 @@
   const FS = (window.FS = window.FS || {});
   const h = (...a) => FS.h(...a);
 
+  // [id, label, seconds per note]. Shred ≈ 16th notes at 200 BPM, Max shred ≈ 16ths at 300 BPM.
   const SPEEDS = [
     ['slow', 'Slow', 0.42],
     ['medium', 'Medium', 0.26],
     ['fast', 'Fast', 0.16],
+    ['faster', 'Faster', 0.11],
+    ['shred', 'Shred', 0.075],
+    ['maxshred', 'Max shred', 0.05],
   ];
 
   FS.initArpeggios = function (panel) {
@@ -42,9 +46,9 @@
     for (const [v, label] of [['up', 'Up'], ['updown', 'Up & down']]) {
       orderSeg.append(h('button', { dataset: { v }, onclick: () => { st.order = v; FS.save(); stopPlaying(); render(); } }, label));
     }
-    const speedSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Playback speed' });
-    for (const [v, label] of SPEEDS) {
-      speedSeg.append(h('button', { dataset: { v }, onclick: () => { st.speed = v; FS.save(); renderControls(); } }, label));
+    const speedSeg = h('div', { class: 'seg speed-seg', role: 'group', 'aria-label': 'Playback speed' });
+    for (const [v, label, step] of SPEEDS) {
+      speedSeg.append(h('button', { dataset: { v }, title: `About ${Math.round(1 / step)} notes per second`, onclick: () => { st.speed = v; FS.save(); renderControls(); } }, label));
     }
 
     const title = h('h2', { class: 'hero-title' });
