@@ -92,55 +92,49 @@
   }
 
   /*
-   * Guitar tones. Notes go through one shared amp chain (so a strummed chord distorts as a whole,
-   * like a real amp): pre-gain → wave-shaper (soft clip for overdrive, hard for distortion) →
-   * EQ / speaker-cabinet low-pass → output level matched to the clean sound.
+   * Guitar tones. Notes go through one shared amp chain (so a strummed chord breaks up as a whole,
+   * like a real amp): high-pass → pre-gain → soft tanh clip (tube-like overdrive) → mid push →
+   * speaker-cabinet low-pass → output level matched to the clean sound. (A heavier Distortion
+   * tone was tried and removed at the owner's request — too messy.)
    */
   FS.TONES = [
     ['clean', 'Clean'],
     ['overdrive', 'Overdriven'],
-    ['distortion', 'Distortion'],
   ];
 
-  function clipCurve(kind) {
+  function clipCurve() {
     const n = 2048;
     const curve = new Float32Array(n);
     for (let i = 0; i < n; i++) {
       const x = (i * 2) / (n - 1) - 1;
-      if (kind === 'overdrive') curve[i] = Math.tanh(2.5 * x) / Math.tanh(2.5); // warm, tube-like
-      else {
-        // Harder, slightly asymmetric clip for distortion.
-        const y = x >= 0 ? x : x * 0.85;
-        curve[i] = Math.tanh(9 * y) / Math.tanh(9);
-      }
+      curve[i] = Math.tanh(2.5 * x) / Math.tanh(2.5); // warm, tube-like
     }
     return curve;
   }
 
   function buildTone(c, id, dest) {
     dest = dest || master;
-    if (id === 'clean') return { id, input: dest };
-    const drive = id === 'overdrive';
+    if (id !== 'overdrive') return { id: 'clean', input: dest };
     const input = c.createGain();
     const hp = c.createBiquadFilter(); // tighten the lows before clipping
     hp.type = 'highpass';
-    hp.frequency.value = drive ? 70 : 110;
+    hp.frequency.value = 70;
     const pre = c.createGain();
-    pre.gain.value = drive ? 3 : 9;
+    pre.gain.value = 3;
     const shaper = c.createWaveShaper();
-    shaper.curve = clipCurve(id);
+    shaper.curve = clipCurve();
     shaper.oversample = '4x';
-    const mid = c.createBiquadFilter(); // distortion: scooped mids; overdrive: a little mid push
+    const mid = c.createBiquadFilter(); // a little mid push
     mid.type = 'peaking';
-    mid.frequency.value = drive ? 900 : 650;
+    mid.frequency.value = 900;
     mid.Q.value = 0.9;
-    mid.gain.value = drive ? 2.5 : -5;
-    const cab = c.createBiquadFilter(); // 4x12-ish speaker roll-off
+    mid.gain.value = 2.5;
+    const cab = c.createBiquadFilter(); // speaker roll-off
     cab.type = 'lowpass';
-    cab.frequency.value = drive ? 4800 : 4000;
+    cab.frequency.value = 4800;
     cab.Q.value = 0.8;
     const out = c.createGain();
-    out.gain.value = drive ? 0.27 : 0.17; // roughly level-matched to clean (a little louder, as amps are)
+    out.gain.value = 0.27; // roughly level-matched to clean (a little louder, as amps are)
     input.connect(hp).connect(pre).connect(shaper).connect(mid).connect(cab).connect(out).connect(dest);
     return { id, input, nodes: [input, hp, pre, shaper, mid, cab, out] };
   }

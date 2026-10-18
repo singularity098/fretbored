@@ -189,18 +189,19 @@ const check = (label, actual, expected) => {
     await page.click('#panel-chords .cell[data-s="2"][data-f="3"]');
     await page.waitForTimeout(150);
     check(`${P} chords: edited shape identified`, await page.textContent('#panel-chords .hero-title'), 'Cadd11');
-    // Guitar settings: renamed header, tone choice (clean / overdriven / distortion) used when strumming.
+    // Guitar settings: renamed header, tone choice (clean / overdriven) used when strumming.
     check(`${P} guitar settings header`, (await page.textContent('#panel-chords .fb-settings-title')).trim(), 'Guitar settings');
     await page.click('#panel-chords .fb-settings summary');
-    await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Distortion")');
+    await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Overdriven")');
     await page.click('#panel-chords .hero-actions button');
     await page.waitForTimeout(300);
-    check(`${P} tone saved`, await page.evaluate(() => FS.settings.fretboard.tone), 'distortion');
+    check(`${P} tone saved`, await page.evaluate(() => FS.settings.fretboard.tone), 'overdrive');
+    check(`${P} tone options`, await page.$$eval('#panel-chords .seg[aria-label="Guitar tone"] button', (b) => b.map((x) => x.textContent).join(' ')), 'Clean Overdriven');
     // Driven tones stay roughly as loud as clean (rendered offline: a strummed E chord).
     const levels = await page.evaluate(async () => {
       const sr = 44100;
       const rms = {};
-      for (const id of ['clean', 'overdrive', 'distortion']) {
+      for (const id of ['clean', 'overdrive']) {
         const oc = new OfflineAudioContext(1, sr, sr);
         const tone = FS.audio.buildTone(oc, id, oc.destination);
         [40, 47, 52, 56, 59, 64].forEach((m, i) => {
@@ -217,9 +218,9 @@ const check = (label, actual, expected) => {
         const d = (await oc.startRendering()).getChannelData(0);
         rms[id] = Math.sqrt(d.reduce((a, v) => a + v * v, 0) / d.length);
       }
-      return [rms.overdrive / rms.clean, rms.distortion / rms.clean].map((x) => x.toFixed(2));
+      return [rms.overdrive / rms.clean].map((x) => x.toFixed(2));
     });
-    check(`${P} tone levels vs clean (overdrive, distortion)`, String(levels.every((x) => x > 0.6 && x < 2)) + ` (${levels.join(', ')})`, /^true /);
+    check(`${P} tone level vs clean (overdrive)`, String(levels.every((x) => x > 0.6 && x < 2)) + ` (${levels.join(', ')})`, /^true /);
     // Palm mute and effects: switches saved, and the sound behaves as designed (rendered offline).
     await page.click('#panel-chords .fb-settings .switch-field:has-text("Palm mute")');
     await page.click('#panel-chords .seg[aria-label="Reverb"] button:has-text("Hall")');

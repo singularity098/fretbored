@@ -13,7 +13,7 @@
       frets: 22,
       labels: 'notes',
       wood: 'ebony',
-      tone: 'clean', // guitar sound: clean | overdrive | distortion
+      tone: 'clean', // guitar sound: clean | overdrive (a saved 'distortion' plays clean)
       palmMute: false,
       reverb: 'off', // off | room | hall
       delay: 'off', // off | slap | echo
@@ -88,6 +88,8 @@
     FS.settings.trainer.to = 12;
     FS.settings.trainer.version = 1;
   }
+  // The Distortion tone was removed; anyone who had it picked gets Clean.
+  if (!['clean', 'overdrive'].includes(FS.settings.fretboard.tone)) FS.settings.fretboard.tone = 'clean';
   FS.DEFAULTS = DEFAULTS;
 
   let timer = null;
