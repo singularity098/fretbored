@@ -1103,3 +1103,9 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
 
 /* Arpeggio speeds: six buttons — two even rows of three on phones */
 @media (max-width: 760px) { .speed-seg { display: grid; grid-template-columns: repeat(3, 1fr); } }
+
+/* Chord tablature beside the chord diagram */
+.chord-box { display: flex; align-items: flex-start; gap: 18px; }
+.cb-tab { display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: 12px; }
+.tab-note.muted text { fill: var(--text-3); }
+.cb-short { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; color: var(--text-2); }

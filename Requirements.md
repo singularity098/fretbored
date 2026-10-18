@@ -43,7 +43,7 @@
   - 6, m6, 6/9, add9, m(add9), add11, 7sus2, m7♭5, m(maj7), 7♭5, 7♯5, maj7♯5, maj7♭5, 9, maj9, m9, 7♭9, 7♯9, 9sus4, 7♯11, 11, m11, 13, maj13, m13
 - There is a position selection as well, example 1, 2, 3, 4, 5, which designates roughly how far up on the fretboard the chord lands.
   - Playable voicings are generated for the current tuning (root in the bass, max 4 fingers or a barre, 4-fret span)
-  - A chord diagram shows the selected shape, and a "Strum" button plays it
+  - A chord diagram shows the selected shape, with the same chord as tablature beside it (one column, highest string on top, x for muted strings, roots highlighted) and the usual shorthand underneath (low string first, e.g. x32010); a "Strum" button plays it
   - "All chord tones" toggle shows every chord tone on the neck behind the selected shape
 - User may also manually add or remove notes by clicking on them, and the application will automatically figure out if there is some chord match and change the selection
   - Tapping a fret moves that string's note there; tapping a played note again mutes the string

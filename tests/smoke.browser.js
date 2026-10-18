@@ -184,6 +184,8 @@ const check = (label, actual, expected) => {
     await page.click('#tab-chords');
     await page.waitForTimeout(250);
     check(`${P} chords: default`, await page.textContent('#panel-chords .hero-title'), 'C');
+    check(`${P} chords: tab beside the diagram (top string first)`, await page.$$eval('#panel-chords .cb-tab .tab-note text', (t) => t.map((x) => x.textContent).join(' ')), '0 1 0 2 3 x');
+    check(`${P} chords: tab shorthand`, (await page.textContent('#panel-chords .cb-short')).trim(), 'x32010');
     await page.click('#panel-chords .cell[data-s="2"][data-f="3"]');
     await page.waitForTimeout(150);
     check(`${P} chords: edited shape identified`, await page.textContent('#panel-chords .hero-title'), 'Cadd11');

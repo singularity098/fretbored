@@ -329,7 +329,38 @@
         }
       });
       p.push('</svg>');
-      box.innerHTML = p.join('');
+      box.innerHTML = `<div class="cb-diagram">${p.join('')}</div>${chordTab(fr)}`;
+    }
+
+    // The same chord as tablature: one column, highest string on top, x = muted; plus the usual
+    // shorthand (low string first, e.g. x32010) underneath.
+    function chordTab(fr) {
+      const tun = FS.currentTuning();
+      const n = fr.length;
+      const names = (tun.flats ? t.FLAT : t.SHARP).map(t.pretty);
+      const gap = n > 6 ? 17 : 19;
+      const left = 28;
+      const W = left + 72;
+      const top = 14;
+      const H = top + (n - 1) * gap + 14;
+      const cx = left + 34;
+      const q = [`<svg class="tab" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Chord tablature: ${fr.map((f, s) => `string ${n - s} ${f < 0 ? 'muted' : `fret ${f}`}`).join(', ')}">`];
+      for (let line = 0; line < n; line++) {
+        const s = n - 1 - line;
+        const y = top + line * gap;
+        q.push(`<text class="tab-str" x="${left - 10}" y="${y}">${names[t.mod12(tun.notes[s])]}</text>`);
+        q.push(`<line class="tab-line" x1="${left - 4}" x2="${W - 2}" y1="${y}" y2="${y}"/>`);
+        const f = fr[s];
+        const txt = f < 0 ? 'x' : String(f);
+        const w = txt.length * 9 + 8;
+        const cls = f < 0 ? ' muted' : !unknown && t.mod12(tun.notes[s] + f) === st.root ? ' root' : '';
+        q.push(`<g class="tab-note${cls}"><rect x="${cx - w / 2}" y="${y - 9}" width="${w}" height="18" rx="4"/><text x="${cx}" y="${y}">${txt}</text></g>`);
+      }
+      q.push(`<line class="tab-bar" x1="${left - 4}" x2="${left - 4}" y1="${top}" y2="${top + (n - 1) * gap}"/>`);
+      q.push(`<line class="tab-bar" x1="${W - 2}" x2="${W - 2}" y1="${top}" y2="${top + (n - 1) * gap}"/>`);
+      q.push('</svg>');
+      const short = fr.map((f) => (f < 0 ? 'x' : String(f))).join(fr.some((f) => f > 9) ? '-' : '');
+      return `<div class="cb-tab">${q.join('')}<div class="cb-short" title="Low string first">${short}</div></div>`;
     }
 
     /* ---- Playback ---- */
