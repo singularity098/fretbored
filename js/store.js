@@ -14,6 +14,9 @@
       labels: 'notes',
       wood: 'ebony',
       tone: 'clean', // guitar sound: clean | overdrive | distortion
+      palmMute: false,
+      reverb: 'off', // off | room | hall
+      delay: 'off', // off | slap | echo
       orientation: 'horizontal',
       controlsOpen: false, // fretboard settings section expanded (shared by all tabs)
       lefty: false,

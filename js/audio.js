@@ -33,31 +33,38 @@
 
   /* ---- Karplus–Strong plucked string, rendered once per MIDI note and cached ---- */
 
-  function makePluck(midi) {
+  // muted: palm mute — the string is damped at the bridge, so the note dies within a few tenths of
+  // a second, sounds darker and has a softer attack.
+  function makePluck(midi, muted) {
     const c = getCtx();
     const sr = c.sampleRate;
     const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    const len = Math.floor(sr * 2.4);
+    const len = Math.floor(sr * (muted ? 0.9 : 2.4));
     const buf = c.createBuffer(1, len, sr);
     const d = buf.getChannelData(0);
     const exact = sr / freq;
     // The two-point average in the loop adds half a sample of delay.
     const P = Math.max(2, Math.round(exact - 0.5));
-    const rho = Math.pow(0.001, 1 / (freq * 3.2)); // ~-60 dB after 3.2 s
+    const rho = Math.pow(0.001, 1 / (freq * (muted ? 0.3 : 3.2))); // ~-60 dB after 3.2 s (0.3 s muted)
     let prev = 0;
     for (let i = 0; i < P; i++) {
       const r = Math.random() * 2 - 1;
-      d[i] = 0.6 * r + 0.4 * prev; // slightly darkened pick noise
+      d[i] = muted ? 0.3 * r + 0.7 * prev : 0.6 * r + 0.4 * prev; // darkened pick noise (more when muted)
       prev = d[i];
     }
     for (let i = P; i < len; i++) {
       d[i] = rho * 0.5 * (d[i - P] + (i - P - 1 >= 0 ? d[i - P - 1] : 0));
     }
+    if (muted) {
+      // The palm also soaks up the highs: a gentle one-pole low-pass over the whole note.
+      let y = 0;
+      for (let i = 0; i < len; i++) d[i] = y += 0.3 * (d[i] - y);
+    }
     let peak = 0;
     for (let i = 0; i < len; i++) peak = Math.max(peak, Math.abs(d[i]));
     const norm = peak ? 0.9 / peak : 1;
-    const fade = Math.floor(sr * 0.3);
-    const attack = Math.floor(sr * 0.0015); // soften the pick transient
+    const fade = Math.floor(sr * (muted ? 0.1 : 0.3));
+    const attack = Math.floor(sr * (muted ? 0.004 : 0.0015)); // soften the pick transient
     for (let i = 0; i < len; i++) {
       d[i] *= norm;
       if (i < attack) d[i] *= i / attack;
@@ -66,18 +73,22 @@
     return { buffer: buf, rate: (P + 0.5) / exact };
   }
 
-  function getPluck(midi) {
-    let p = pluckCache.get(midi);
+  const palmMuted = () => !!(FS.settings && FS.settings.fretboard && FS.settings.fretboard.palmMute);
+
+  function getPluck(midi, muted) {
+    const key = `${midi}:${muted ? 'm' : ''}`;
+    let p = pluckCache.get(key);
     if (!p) {
-      p = makePluck(midi);
-      pluckCache.set(midi, p);
+      p = makePluck(midi, muted);
+      pluckCache.set(key, p);
     }
     return p;
   }
 
   // Render any uncached notes now, so scheduling a phrase isn't delayed by synthesis.
   function prepare(midis) {
-    midis.forEach(getPluck);
+    const m = palmMuted();
+    midis.forEach((x) => getPluck(x, m));
   }
 
   /*
@@ -90,7 +101,6 @@
     ['overdrive', 'Overdriven'],
     ['distortion', 'Distortion'],
   ];
-  let toneChain = null; // { id, input }
 
   function clipCurve(kind) {
     const n = 2048;
@@ -135,32 +145,120 @@
     return { id, input, nodes: [input, hp, pre, shaper, mid, cab, out] };
   }
 
-  function toneInput(c) {
-    const fb = FS.settings && FS.settings.fretboard;
-    const id = fb && FS.TONES.some((x) => x[0] === fb.tone) ? fb.tone : 'clean';
-    if (!toneChain || toneChain.id !== id) {
-      const old = toneChain;
-      toneChain = buildTone(c, id);
-      // Let notes already playing through the old chain ring out, then free it.
-      if (old && old.nodes) setTimeout(() => old.nodes.forEach((n) => n.disconnect()), 4000);
+  /*
+   * Effects after the amp: delay (repeats get darker, like an analog delay) and reverb (a
+   * generated impulse response — decaying noise, so no sound files). Delay also feeds the reverb.
+   * Nothing is built while they're off, so they cost nothing then.
+   */
+  FS.REVERBS = [
+    ['off', 'Off'],
+    ['room', 'Room'],
+    ['hall', 'Hall'],
+  ];
+  FS.DELAYS = [
+    ['off', 'Off'],
+    ['slap', 'Slapback'],
+    ['echo', 'Echo'],
+  ];
+  const REVERB = { room: { secs: 1.1, wet: 0.4 }, hall: { secs: 2.8, wet: 0.42 } };
+  const DELAY = { slap: { time: 0.11, feedback: 0.12, wet: 0.32 }, echo: { time: 0.36, feedback: 0.38, wet: 0.3 } };
+  const irCache = new WeakMap(); // per AudioContext: { room, hall }
+
+  function impulse(c, kind) {
+    let per = irCache.get(c);
+    if (!per) irCache.set(c, (per = {}));
+    if (per[kind]) return per[kind];
+    const { secs } = REVERB[kind];
+    const sr = c.sampleRate;
+    const len = Math.floor(sr * secs);
+    const buf = c.createBuffer(2, len, sr);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      let lp = 0;
+      for (let i = 0; i < len; i++) {
+        const t = i / len;
+        // Noise with an exponential decay; low-passed more as it fades (air absorbs the highs).
+        const x = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.2) * Math.exp(-4 * t);
+        lp += (0.55 - 0.4 * t) * (x - lp);
+        d[i] = i < sr * 0.004 ? lp * (i / (sr * 0.004)) : lp;
+      }
     }
-    return toneChain.input;
+    return (per[kind] = buf);
   }
 
-  // opts.clean: bypass the guitar tone (the tuner's reference notes).
+  // The whole guitar chain for the current settings: tone → delay/reverb → dest.
+  function buildChain(c, o, dest) {
+    dest = dest || master;
+    const nodes = [];
+    const node = (n) => (nodes.push(n), n);
+    let fxIn = dest;
+    if ((o.reverb && o.reverb !== 'off') || (o.delay && o.delay !== 'off')) {
+      fxIn = node(c.createGain());
+      fxIn.connect(dest); // dry
+      let reverbIn = null;
+      if (REVERB[o.reverb]) {
+        const conv = node(c.createConvolver());
+        conv.buffer = impulse(c, o.reverb);
+        const wet = node(c.createGain());
+        wet.gain.value = REVERB[o.reverb].wet;
+        fxIn.connect(conv).connect(wet).connect(dest);
+        reverbIn = conv;
+      }
+      if (DELAY[o.delay]) {
+        const p = DELAY[o.delay];
+        const dl = node(c.createDelay(1));
+        dl.delayTime.value = p.time;
+        const tone = node(c.createBiquadFilter());
+        tone.type = 'lowpass';
+        tone.frequency.value = 2800;
+        const fb = node(c.createGain());
+        fb.gain.value = p.feedback;
+        const wet = node(c.createGain());
+        wet.gain.value = p.wet;
+        fxIn.connect(dl);
+        dl.connect(tone).connect(fb).connect(dl); // feedback loop
+        tone.connect(wet).connect(dest);
+        if (reverbIn) wet.connect(reverbIn);
+      }
+    }
+    const tone = buildTone(c, o.tone || 'clean', fxIn);
+    return { input: tone.input, nodes: nodes.concat(tone.nodes || []) };
+  }
+
+  let chain = null; // { key, input, nodes }
+  function chainInput(c) {
+    const fb = (FS.settings && FS.settings.fretboard) || {};
+    const pick = (list, v) => (list.some((x) => x[0] === v) ? v : 'off');
+    const o = { tone: FS.TONES.some((x) => x[0] === fb.tone) ? fb.tone : 'clean', reverb: pick(FS.REVERBS, fb.reverb), delay: pick(FS.DELAYS, fb.delay) };
+    const key = `${o.tone}|${o.reverb}|${o.delay}`;
+    if (!chain || chain.key !== key) {
+      const old = chain;
+      chain = { key, ...buildChain(c, o) };
+      // Let notes (and reverb tails) already in the old chain ring out, then free it.
+      if (old) setTimeout(() => old.nodes.forEach((n) => n.disconnect()), 6000);
+    }
+    return chain.input;
+  }
+
+  // opts.clean: plain, unmuted note straight to the output — no tone, palm mute or effects (the
+  // tuner's reference notes).
   function playNote(midi, when, duration, gain, opts) {
     const c = getCtx();
-    const p = getPluck(midi);
+    const clean = !!(opts && opts.clean);
+    const muted = !clean && palmMuted();
+    const p = getPluck(midi, muted);
     const src = c.createBufferSource();
     src.buffer = p.buffer;
     src.playbackRate.value = p.rate;
     const g = c.createGain();
     const t = Math.max(when, c.currentTime);
     const dur = duration || 1.6;
-    g.gain.setValueAtTime(gain === undefined ? 0.5 : gain, t);
-    g.gain.setValueAtTime(gain === undefined ? 0.5 : gain, t + dur);
+    // Palm-muted notes lose their highs (and loudness): bring them back up to match open notes.
+    const level = (gain === undefined ? 0.5 : gain) * (muted ? 1.8 : 1);
+    g.gain.setValueAtTime(level, t);
+    g.gain.setValueAtTime(level, t + dur);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.25);
-    src.connect(g).connect(opts && opts.clean ? master : toneInput(c));
+    src.connect(g).connect(clean ? master : chainInput(c));
     src.start(t);
     src.stop(t + dur + 0.3);
     return src;
@@ -245,6 +343,7 @@
     return src;
   }
 
-  // buildTone is exposed so tests can render a tone offline and compare levels.
-  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, playBuffer, samples, buildTone };
+  // buildTone / buildChain / pluck are exposed so tests can render offline and check the sound.
+  const pluck = (midi, muted) => getPluck(midi, muted).buffer;
+  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, playBuffer, samples, buildTone, buildChain, pluck };
 })();

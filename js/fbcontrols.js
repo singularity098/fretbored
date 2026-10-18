@@ -52,6 +52,18 @@
     for (const [v, label] of FS.TONES) {
       toneSeg.append(h('button', { dataset: { v }, onclick: () => { fb().tone = v; changed(); } }, label));
     }
+    const fxSeg = (list, key, aria) => {
+      const seg = h('div', { class: 'seg', role: 'group', 'aria-label': aria });
+      for (const [v, label] of list) seg.append(h('button', { dataset: { v }, onclick: () => { fb()[key] = v; changed(); } }, label));
+      return seg;
+    };
+    const reverbSeg = fxSeg(FS.REVERBS, 'reverb', 'Reverb');
+    const delaySeg = fxSeg(FS.DELAYS, 'delay', 'Delay');
+    const palm = h('input', { type: 'checkbox', role: 'switch', 'aria-label': 'Palm mute' });
+    palm.addEventListener('change', () => {
+      fb().palmMute = palm.checked;
+      changed();
+    });
     const woodSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Fretboard wood' });
     for (const [v, label] of FS.WOODS) {
       woodSeg.append(h('button', { dataset: { v }, onclick: () => { fb().wood = v; changed(); } }, label));
@@ -71,7 +83,7 @@
     const details = h('details', { class: 'fb-settings' },
       h('summary', null,
         h('span', { class: 'fb-settings-title' }, 'Guitar settings'),
-        h('span', { class: 'fb-settings-hint' }, 'strings, tuning, frets, tone, wood, labels…'),
+        h('span', { class: 'fb-settings-hint' }, 'strings, tuning, frets, tone, effects, wood…'),
         tuningLabel),
       controls);
     details.open = !!fb().controlsOpen;
@@ -92,6 +104,9 @@
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Labels'), labelSeg),
       h('div', { class: 'field mobile-only' }, h('span', { class: 'field-label' }, 'Layout'), layoutSeg),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Tone'), toneSeg),
+      h('label', { class: 'field switch-field' }, h('span', { class: 'field-label' }, 'Palm mute'), h('span', { class: 'switch' }, palm, h('span', { class: 'slider' }))),
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Reverb'), reverbSeg),
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Delay'), delaySeg),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Wood'), woodSeg),
       h('label', { class: 'field switch-field' }, h('span', { class: 'field-label' }, 'Left-handed'), h('span', { class: 'switch' }, lefty, h('span', { class: 'slider' })))
     );
@@ -118,6 +133,9 @@
       layoutSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.orientation));
       woodSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.wood));
       toneSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.tone));
+      reverbSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.reverb));
+      delaySeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === s.delay));
+      palm.checked = !!s.palmMute;
       lefty.checked = !!s.lefty;
       tuningLabel.textContent = `${cur.name} · ${FS.tuningLabel(cur)}`;
     }

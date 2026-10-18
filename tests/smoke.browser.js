@@ -220,6 +220,49 @@ const check = (label, actual, expected) => {
       return [rms.overdrive / rms.clean, rms.distortion / rms.clean].map((x) => x.toFixed(2));
     });
     check(`${P} tone levels vs clean (overdrive, distortion)`, String(levels.every((x) => x > 0.6 && x < 2)) + ` (${levels.join(', ')})`, /^true /);
+    // Palm mute and effects: switches saved, and the sound behaves as designed (rendered offline).
+    await page.click('#panel-chords .fb-settings .switch-field:has-text("Palm mute")');
+    await page.click('#panel-chords .seg[aria-label="Reverb"] button:has-text("Hall")');
+    await page.click('#panel-chords .seg[aria-label="Delay"] button:has-text("Echo")');
+    await page.click('#panel-chords .hero-actions button');
+    await page.waitForTimeout(300);
+    check(`${P} palm mute / reverb / delay saved`, await page.evaluate(() => { const f = FS.settings.fretboard; return `${f.palmMute} ${f.reverb} ${f.delay}`; }), 'true hall echo');
+    const fx = await page.evaluate(async () => {
+      const sr = 44100;
+      const rms = (d, rate, a, b) => { let s = 0; for (let i = Math.floor(a * rate); i < Math.floor(b * rate); i++) s += d[i] * d[i]; return Math.sqrt(s / ((b - a) * rate)); };
+      const open = FS.audio.pluck(45, false), muted = FS.audio.pluck(45, true);
+      const sustain = rms(muted.getChannelData(0), muted.sampleRate, 0.5, 0.7) / rms(open.getChannelData(0), open.sampleRate, 0.5, 0.7);
+      const render = async (reverb, delay) => {
+        const oc = new OfflineAudioContext(1, sr * 2, sr);
+        const ch = FS.audio.buildChain(oc, { tone: 'clean', reverb, delay }, oc.destination);
+        const buf = oc.createBuffer(1, sr * 0.02, sr);
+        buf.getChannelData(0).forEach((_, i, d) => (d[i] = Math.sin(i / 3) * (1 - i / d.length)));
+        const src = oc.createBufferSource();
+        src.buffer = buf;
+        src.connect(ch.input);
+        src.start(0);
+        return (await oc.startRendering()).getChannelData(0);
+      };
+      const echo = await render('off', 'echo');
+      let at = 0;
+      for (let i = Math.floor(0.05 * sr), pk = 0; i < sr; i++) if (Math.abs(echo[i]) > pk) (pk = Math.abs(echo[i])), (at = i / sr);
+      const dry = await render('off', 'off');
+      const room = await render('room', 'off');
+      const hall = await render('hall', 'off');
+      return {
+        mutedDiesFast: sustain < 0.05,
+        echoAt: at.toFixed(2),
+        reverbTails: rms(dry, sr, 0.3, 1) === 0 && rms(hall, sr, 0.3, 1) > rms(room, sr, 0.3, 1) && rms(room, sr, 0.3, 1) > 0,
+        directLevelKept: Math.abs(rms(hall, sr, 0, 0.02) / rms(dry, sr, 0, 0.02) - 1) < 0.2,
+      };
+    });
+    check(`${P} palm-muted note dies quickly`, String(fx.mutedDiesFast), 'true');
+    check(`${P} echo repeats after 0.36 s`, fx.echoAt, '0.36');
+    check(`${P} reverb: hall rings longer than room, dry has no tail`, String(fx.reverbTails), 'true');
+    check(`${P} effects keep the direct sound level`, String(fx.directLevelKept), 'true');
+    await page.click('#panel-chords .fb-settings .switch-field:has-text("Palm mute")');
+    await page.click('#panel-chords .seg[aria-label="Reverb"] button:has-text("Off")');
+    await page.click('#panel-chords .seg[aria-label="Delay"] button:has-text("Off")');
     await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Clean")');
     await page.click('#panel-chords .fb-settings summary');
     await shot('chords');
