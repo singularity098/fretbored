@@ -396,12 +396,12 @@ const check = (label, actual, expected) => {
       await page.waitForTimeout(800);
     };
     await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);
-    check(`${P} trainer: right answer`, await trPrompt(), /^✓ Correct/);
+    check(`${P} trainer: right answer`, await trPrompt(), /^✓ Correct — .+ · \d+\.\d s · \+\d+$/);
     await page.waitForTimeout(900);
     await page.click(`#panel-trainer .tr-answer[data-pc="${((await askedPc()) + 1) % 12}"]`);
     check(`${P} trainer: wrong answer`, await trPrompt(), /^✗ It’s/);
     const stats = await page.$$eval('#panel-trainer .tr-stat-val', (els) => els.map((e) => e.textContent).join(' '));
-    check(`${P} trainer: score (asked correct accuracy in-a-row day-streak)`, stats, /^2 1 50% 0 \(best 1\) 0$/);
+    check(`${P} trainer: score (points asked correct accuracy time in-a-row day-streak)`, stats, /^\d+ 2 1 50% \d+\.\d s 0 \(best 1\) 0$/);
     await page.waitForTimeout(1800);
 
     await page.click('#panel-trainer .pill:has-text("5 – 9")');
@@ -572,6 +572,50 @@ const check = (label, actual, expected) => {
     await page.clock.runFor(61000);
     check('[challenge] result', await page.textContent('#panel-trainer .tr-prompt-text'), /^⏱ Time! 3 correct out of 3 — new best!/);
     check('[challenge] best saved', await page.evaluate(() => String(JSON.parse(localStorage.getItem('fretbored:v1')).trainer.bestTimed.name)), '3');
+    await ctx.close();
+  }
+
+  // Trainer answer speed: points, average time, saved per-note times and the slow flag (fake clock).
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
+    const page = await ctx.newPage();
+    page.on('pageerror', (e) => failures.push(`[speed] page error: ${e.message}`));
+    await page.clock.install();
+    await page.goto(url + '#trainer');
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.clock.runFor(500);
+    const prompt = () => page.textContent('#panel-trainer .tr-prompt-text');
+    const answerAfter = async (ms) => {
+      await page.clock.runFor(ms);
+      const pc = await page.evaluate(() => +document.querySelector('#panel-trainer .note').dataset.midi % 12);
+      await page.click(`#panel-trainer .tr-answer[data-pc="${pc}"]`);
+      return pc;
+    };
+    await page.click('#panel-trainer .tr-score-actions button:has-text("Reset score")'); // a fresh question, now
+    await answerAfter(1000);
+    check('[speed] quick answer: full bonus', await prompt(), /· 1\.\d s · \+100$/);
+    await page.clock.runFor(800);
+    const pc = await answerAfter(3750);
+    check('[speed] slower answer: part bonus', await prompt(), /· 3\.\d s · \+7\d$/);
+    const vals = await page.$$eval('#panel-trainer .tr-stat-val', (els) => els.map((e) => e.textContent));
+    check('[speed] points and average time', `${vals[0]} ${vals[4]}`, /^17\d 2\.\d s$/);
+    await page.clock.runFor(500);
+    const rec = await page.evaluate((pc) => JSON.parse(localStorage.getItem('fretbored:v1')).trainer.stats.notes[pc], pc);
+    check('[speed] time saved with the note', String(rec.length === 4 && rec[2] >= 3750 && rec[3] >= 1), 'true');
+    // Seeded history: C answered far slower than the rest is flagged slow.
+    await page.evaluate(() => {
+      const notes = {};
+      for (let pc = 0; pc < 12; pc++) notes[pc] = pc === 0 ? [10, 10, 50000, 10] : [10, 10, 15000, 10];
+      FS.settings.trainer.stats.notes = notes;
+      FS.save();
+    });
+    await page.clock.runFor(500);
+    await page.reload();
+    await page.clock.runFor(500);
+    const flags = await page.$$eval('#panel-trainer .tr-acc', (els) => els.slice(0, 12).map((e) => (e.querySelector('.tr-weak') || {}).textContent || '-'));
+    check('[speed] slow note flagged', flags.join(' '), /^🐢 slow( -){11}$/);
+    check('[speed] note time shown', (await page.textContent('#panel-trainer .tr-acc .tr-acc-val')).trim(), '100% of 10 · 5.0 s');
     await ctx.close();
   }
 

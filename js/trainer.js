@@ -17,6 +17,13 @@
   const FIND_MAX_MISTAKES = 3;
   const WEAK_MIN = 5; // answers needed before a note can be flagged weak
   const WEAK_BELOW = 0.7;
+  // Answer speed: a right answer scores 50 points plus up to 50 more for speed — the full bonus at
+  // FAST_MS or quicker, none from SLOW_MS (find mode times each note found, not the whole round).
+  const FAST_MS = 1500;
+  const SLOW_MS = 6000;
+  const MAX_MS = 10000; // longer times are saved as this, so one wander-off doesn't skew averages
+  const SLOW_RATIO = 1.4; // a note this much slower than your average (and over SLOW_FLOOR) is flagged slow
+  const SLOW_FLOOR = 1500;
   const GOOD = 'var(--good)';
   const BAD = 'var(--danger)';
 
@@ -74,7 +81,14 @@
       streak: 0,
       best: 0,
       timer: null,
-      timed: null, // { end, score, asked, done, raf, newBest }
+      timed: null, // { end, score, asked, done, raf, newBest, ms, timedN }
+      shownAt: 0, // performance.now() when the question appeared
+      untimed: false, // the page was hidden or settings changed mid-question: don't time it
+      lastMs: null, // the answer time just recorded (per note in find mode)
+      lastPts: 0,
+      points: 0,
+      ms: 0, // summed answer times of this session's timed right answers
+      timedN: 0,
     };
 
     /* ---------------------------------------------------------------- Helpers */
@@ -104,6 +118,19 @@
     }
     // Smoothed miss rate: unseen = 0.5, so new notes get asked too.
     const missRate = (rec) => (rec ? (rec[0] - rec[1] + 1) / (rec[0] + 2) : 0.5);
+    // Records are [asked, correct, msSum, timedN]; the times are of right answers only.
+    const avgMs = (rec) => (rec && rec[3] ? rec[2] / rec[3] : null);
+    const clamp01 = (x) => Math.max(0, Math.min(1, x));
+    // 0 = as quick as your overall average (or not enough timed answers yet), 1 = twice as slow.
+    const slowRate = (rec, overall) => (rec && rec[3] >= 3 && overall ? clamp01(avgMs(rec) / overall - 1) : 0);
+    const overallMs = (recs) => {
+      let ms = 0;
+      let n = 0;
+      for (const r of recs) if (r && r[3]) (ms += r[2]), (n += r[3]);
+      return n ? ms / n : null;
+    };
+    const fmtSecs = (ms) => `${(ms / 1000).toFixed(1)} s`;
+    const speedPoints = (ms) => 50 + (ms === null ? 0 : Math.round(50 * clamp01((SLOW_MS - ms) / (SLOW_MS - FAST_MS))));
     function pickWeighted(items, weight) {
       if (!items.length) return null;
       const ws = items.map(weight);
@@ -167,9 +194,11 @@
       const v = h('div', { class: 'tr-stat-val' }, '0');
       return { el: h('div', { class: 'tr-stat' }, v, h('div', { class: 'tr-stat-label' }, label)), v };
     };
+    const sPoints = stat('Points');
     const sAsked = stat('Questions');
     const sCorrect = stat('Correct');
     const sPct = stat('Accuracy');
+    const sTime = stat('Avg time');
     const sStreak = stat('In a row');
     const sDaily = stat('Day streak');
     const challengeBtn = h('button', { class: 'btn primary small', onclick: () => (timedRunning() ? stopTimed(false) : startTimed()) });
@@ -219,7 +248,7 @@
       ),
       h('div', { class: 'card tr-score' },
         h('div', { class: 'tr-score-row' },
-          h('div', { class: 'tr-stats' }, sAsked.el, sCorrect.el, sPct.el, sStreak.el, sDaily.el),
+          h('div', { class: 'tr-stats' }, sPoints.el, sAsked.el, sCorrect.el, sPct.el, sTime.el, sStreak.el, sDaily.el),
           h('div', { class: 'tr-score-actions' }, challengeBtn, resetBtn)),
         timedBox
       ),
@@ -235,11 +264,11 @@
         streakBox,
         h('h3', { class: 'section-title' }, 'Last 7 days'),
         history,
-        h('h3', { class: 'section-title' }, 'Accuracy by note'),
+        h('h3', { class: 'section-title' }, 'Accuracy and speed by note'),
         noteGrid,
-        h('h3', { class: 'section-title' }, 'Accuracy by string'),
+        h('h3', { class: 'section-title' }, 'Accuracy and speed by string'),
         stringGrid,
-        h('p', { class: 'muted small' }, 'Progress is saved on this device. “Focus on weak spots” asks the notes and positions you miss more often.')
+        h('p', { class: 'muted small' }, 'Progress is saved on this device. Right answers score 50 points plus up to 50 for speed; times are the average of right answers (per note found in “Find the note”). “Focus on weak spots” asks the notes and positions you miss or answer slowly more often.')
       )
     );
 
@@ -281,13 +310,23 @@
       if (st.mode === 'find') {
         const pcs = [...new Set(cells.map((c) => c.pc))];
         const fresh = pcs.length > 1 && game.prev ? pcs.filter((pc) => pc !== game.prev.pc) : pcs;
-        const pc = pickWeighted(fresh, (p) => (st.adaptive ? 1 + 4 * missRate(st.stats.notes[p]) : 1));
+        const avg = overallMs(Object.values(st.stats.notes));
+        const pc = pickWeighted(fresh, (p) => (st.adaptive ? 1 + 4 * missRate(st.stats.notes[p]) + 3 * slowRate(st.stats.notes[p], avg) : 1));
         game.q = pc === null ? null : { pc, cells: cells.filter((c) => c.pc === pc) };
       } else {
         const fresh = cells.filter((c) => !(game.prev && game.prev.s === c.s && game.prev.f === c.f));
         const pool = fresh.length ? fresh : cells;
-        game.q = pickWeighted(pool, (c) => (st.adaptive ? 1 + 4 * missRate(st.stats.pos[posKey(c.s, c.f)]) + 3 * missRate(st.stats.notes[c.pc]) : 1));
+        const avg = overallMs(Object.values(st.stats.notes));
+        const posAvg = overallMs(Object.values(st.stats.pos));
+        game.q = pickWeighted(pool, (c) => {
+          if (!st.adaptive) return 1;
+          const pos = st.stats.pos[posKey(c.s, c.f)];
+          const note = st.stats.notes[c.pc];
+          return 1 + 4 * missRate(pos) + 3 * missRate(note) + 2 * slowRate(pos, posAvg) + 3 * slowRate(note, avg);
+        });
       }
+      game.shownAt = performance.now();
+      game.untimed = false;
       render();
       if (game.q && st.mode === 'name') board.scrollToFret(game.q.f);
       else board.scrollToFret(Math.round((st.from + st.to) / 2));
@@ -304,8 +343,9 @@
       if (st.mode !== 'name' || !game.q || game.answered !== null) return;
       const ok = pc === game.q.pc;
       game.answered = pc;
-      record(game.q.pc, posKey(game.q.s, game.q.f), ok);
-      finish(ok);
+      const ms = ok ? answerMs(1) : null;
+      record(game.q.pc, posKey(game.q.s, game.q.f), ok, ms);
+      finish(ok, ms);
     }
 
     // Find mode: tapping a fretboard cell.
@@ -320,8 +360,9 @@
         if (game.found.size >= game.q.cells.length) {
           const ok = game.mistakes === 0;
           game.answered = ok ? 'ok' : 'bad';
-          record(game.q.pc, null, ok);
-          finish(ok);
+          const ms = ok ? answerMs(game.q.cells.length) : null;
+          record(game.q.pc, null, ok, ms);
+          finish(ok, ms);
           return;
         }
       } else {
@@ -345,8 +386,19 @@
       finish(false);
     }
 
-    function finish(ok) {
+    // Time since the question appeared, per note (find mode finds `notes` of them); null if untimed.
+    function answerMs(notes) {
+      if (game.untimed) return null;
+      return Math.min(MAX_MS, Math.round((performance.now() - game.shownAt) / notes));
+    }
+
+    // ms: answer time of a right answer (null when wrong or untimed)
+    function finish(ok, ms = null) {
       game.asked++;
+      game.lastMs = ms;
+      game.lastPts = ok ? speedPoints(ms) : 0;
+      game.points += game.lastPts;
+      if (ms !== null) (game.ms += ms), game.timedN++;
       if (ok) {
         game.correct++;
         game.streak++;
@@ -356,6 +408,7 @@
       if (fast) {
         game.timed.asked++;
         if (ok) game.timed.score++;
+        if (ms !== null) (game.timed.ms += ms), game.timed.timedN++;
       }
       game.prev = st.mode === 'name' ? game.q : { pc: game.q.pc };
       render();
@@ -363,12 +416,13 @@
       game.timer = setTimeout(newQuestion, ok ? (fast ? 300 : 700) : fast ? 1000 : 1700);
     }
 
-    function record(pc, pos, ok) {
+    function record(pc, pos, ok, ms = null) {
       const S = st.stats;
       const bump = (obj, k) => {
         const r = obj[k] || [0, 0];
         r[0]++;
         if (ok) r[1]++;
+        if (ms !== null) (r[2] = (r[2] || 0) + ms), (r[3] = (r[3] || 0) + 1);
         obj[k] = r;
       };
       bump(S.notes, pc);
@@ -392,7 +446,7 @@
 
     function resetScore() {
       stopTimed(true);
-      game.asked = game.correct = game.streak = game.best = 0;
+      game.asked = game.correct = game.streak = game.best = game.points = game.ms = game.timedN = 0;
       game.prev = null;
       newQuestion();
     }
@@ -411,7 +465,7 @@
 
     function startTimed() {
       stopTimed(true);
-      game.timed = { end: performance.now() + CHALLENGE_MS, score: 0, asked: 0, done: false, raf: 0, newBest: false };
+      game.timed = { end: performance.now() + CHALLENGE_MS, score: 0, asked: 0, done: false, raf: 0, newBest: false, ms: 0, timedN: 0 };
       game.prev = null;
       const tick = () => {
         if (!game.timed || game.timed.done) return;
@@ -517,18 +571,18 @@
       let cls = '';
       if (game.timed && game.timed.done) {
         const T = game.timed;
-        text = `⏱ Time! ${T.score} correct out of ${T.asked}${T.newBest ? ' — new best!' : ` (best ${st.bestTimed[st.mode]})`}`;
+        text = `⏱ Time! ${T.score} correct out of ${T.asked}${T.newBest ? ' — new best!' : ` (best ${st.bestTimed[st.mode]})`}${T.timedN ? ` · ${fmtSecs(T.ms / T.timedN)} avg` : ''}`;
         cls = 'right';
       } else if (!q) text = 'No notes in the practice area — widen the range or add strings';
       else if (st.mode === 'name') {
         const done = game.answered !== null;
         const ok = done && game.answered === q.pc;
         if (!done) text = `String ${n - q.s}, ${q.f === 0 ? 'open' : `fret ${q.f}`}`;
-        else if (ok) (text = `✓ Correct — ${pcName(q.pc)}`), (cls = 'right');
+        else if (ok) (text = `✓ Correct — ${pcName(q.pc)}${speedText()}`), (cls = 'right');
         else (text = `✗ It’s ${pcName(q.pc)}`), (cls = 'wrong');
       } else {
         const total = q.cells.length;
-        if (game.answered === 'ok') (text = `✓ Found all ${total} × ${pcName(q.pc)}`), (cls = 'right');
+        if (game.answered === 'ok') (text = `✓ Found all ${total} × ${pcName(q.pc)}${speedText(total > 1 ? ' per note' : '')}`), (cls = 'right');
         else if (game.answered === 'bad') (text = `✗ Here are all the ${pcName(q.pc)}`), (cls = 'wrong');
         else text = `Tap every ${pcName(q.pc)} — ${game.found.size} of ${total} found${game.mistakes ? ` · ${game.mistakes} miss${game.mistakes > 1 ? 'es' : ''}` : ''}`;
       }
@@ -538,7 +592,14 @@
       showBtn.hidden = st.mode !== 'find' || !q || game.answered !== null;
     }
 
+    // " · 1.4 s · +89" after a right answer
+    function speedText(per = '') {
+      return `${game.lastMs !== null ? ` · ${fmtSecs(game.lastMs)}${per}` : ''} · +${game.lastPts}`;
+    }
+
     function renderScore() {
+      sPoints.v.textContent = game.points;
+      sTime.v.textContent = game.timedN ? fmtSecs(game.ms / game.timedN) : '–';
       sAsked.v.textContent = game.asked;
       sCorrect.v.textContent = game.correct;
       sPct.v.textContent = game.asked ? `${Math.round((100 * game.correct) / game.asked)}%` : '–';
@@ -556,7 +617,7 @@
       if (timedClock.textContent !== clock) timedClock.textContent = clock;
       timedClock.classList.toggle('low', !T.done && secs <= 10);
       timedBar.firstChild.style.width = `${(left / CHALLENGE_MS) * 100}%`;
-      const info = `${T.score} correct · best ${st.bestTimed[st.mode] || 0}`;
+      const info = `${T.score} correct${T.timedN ? ` · ${fmtSecs(T.ms / T.timedN)} avg` : ''} · best ${st.bestTimed[st.mode] || 0}`;
       if (timedInfo.textContent !== info) timedInfo.textContent = info;
     }
 
@@ -592,7 +653,7 @@
       for (let i = 6; i >= 0; i--) {
         const d = new Date(Date.now() - i * 864e5);
         const rec = S.days[dayKey(d)] || [0, 0];
-        days.push({ d, asked: rec[0], correct: rec[1] });
+        days.push({ d, asked: rec[0], correct: rec[1], ms: avgMs(rec) });
       }
       const max = Math.max(1, ...days.map((x) => x.asked));
       history.innerHTML = '';
@@ -602,7 +663,7 @@
         history.append(
           h('div', {
             class: 'tr-day' + (x.asked >= DAILY_GOAL ? ' goal' : ''),
-            title: `${x.d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}: ${x.asked} question${x.asked === 1 ? '' : 's'}${pct !== null ? `, ${pct}% correct` : ''}${x.asked >= DAILY_GOAL ? ' — daily goal reached' : ''}`,
+            title: `${x.d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}: ${x.asked} question${x.asked === 1 ? '' : 's'}${pct !== null ? `, ${pct}% correct` : ''}${x.ms !== null ? `, ${fmtSecs(x.ms)} average` : ''}${x.asked >= DAILY_GOAL ? ' — daily goal reached' : ''}`,
           },
             h('div', { class: 'tr-day-count' }, x.asked ? String(x.asked) : ''),
             h('div', { class: 'tr-day-track' }, h('div', { class: 'tr-day-bar', style: `height:${(x.asked / max) * 100}%` })),
@@ -612,32 +673,34 @@
         );
       }
 
-      const accCell = (name, rec, extra) => {
+      // overall: average answer time the cells are compared with to flag slow ones
+      const accCell = (name, rec, overall, extra) => {
         const asked = rec ? rec[0] : 0;
         const acc = asked ? rec[1] / asked : null;
+        const ms = avgMs(rec);
         const weak = asked >= WEAK_MIN && acc < WEAK_BELOW;
-        return h('div', { class: 'tr-acc' + (weak ? ' weak' : ''), title: asked ? `${name}: ${rec[1]} of ${asked} correct` : `${name}: not asked yet` },
-          h('div', { class: 'tr-acc-head' }, h('span', { class: 'tr-acc-name' }, name), extra || null, weak ? h('span', { class: 'tr-weak' }, '⚠ weak') : null),
+        const slow = !weak && rec && rec[3] >= WEAK_MIN && overall && ms >= SLOW_RATIO * overall && ms >= SLOW_FLOOR;
+        const flag = weak ? '⚠ weak' : slow ? '🐢 slow' : null;
+        return h('div', { class: 'tr-acc' + (flag ? ' weak' : ''), title: asked ? `${name}: ${rec[1]} of ${asked} correct${ms !== null ? `, ${fmtSecs(ms)} on average (yours overall: ${fmtSecs(overall)})` : ''}` : `${name}: not asked yet` },
+          h('div', { class: 'tr-acc-head' }, h('span', { class: 'tr-acc-name' }, name), extra || null, flag ? h('span', { class: 'tr-weak' }, flag) : null),
           h('div', { class: 'tr-acc-track' }, h('div', { class: 'tr-acc-bar', style: `width:${acc === null ? 0 : acc * 100}%` })),
-          h('div', { class: 'tr-acc-val' }, acc === null ? 'not asked yet' : `${Math.round(acc * 100)}% of ${asked}`)
+          h('div', { class: 'tr-acc-val' }, acc === null ? 'not asked yet' : `${Math.round(acc * 100)}% of ${asked}${ms !== null ? ` · ${fmtSecs(ms)}` : ''}`)
         );
       };
       noteGrid.innerHTML = '';
-      for (let pc = 0; pc < 12; pc++) noteGrid.append(accCell(pcName(pc), S.notes[pc]));
+      const notesAvg = overallMs(Object.values(S.notes));
+      for (let pc = 0; pc < 12; pc++) noteGrid.append(accCell(pcName(pc), S.notes[pc], notesAvg));
 
       // Per string of the current tuning, from the position stats.
       stringGrid.innerHTML = '';
       const notes = tuning();
+      const posAvg = overallMs(Object.values(S.pos));
       for (let s = notes.length - 1; s >= 0; s--) {
-        let a = 0;
-        let c = 0;
+        const sum = [0, 0, 0, 0];
         for (const [k, r] of Object.entries(S.pos)) {
-          if (+k.split(':')[0] === notes[s]) {
-            a += r[0];
-            c += r[1];
-          }
+          if (+k.split(':')[0] === notes[s]) for (let i = 0; i < 4; i++) sum[i] += r[i] || 0;
         }
-        stringGrid.append(accCell(`String ${notes.length - s}`, a ? [a, c] : null, h('span', { class: 'muted small' }, shortName(t.mod12(notes[s])))));
+        stringGrid.append(accCell(`String ${notes.length - s}`, sum[0] ? sum : null, posAvg, h('span', { class: 'muted small' }, shortName(t.mod12(notes[s])))));
       }
     }
 
@@ -667,7 +730,11 @@
       } else renderBoard();
     });
     FS.on('tab', (tab) => {
+      if (tab !== 'trainer') game.untimed = true;
       if (tab !== 'trainer' && timedRunning()) stopTimed(true);
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) game.untimed = true;
     });
 
     renderSetup();

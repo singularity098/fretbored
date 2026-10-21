@@ -67,7 +67,9 @@ fifths: the wheel comes first (Key/Mode controls and info sit beside it on deskt
 Settings: add new keys to `DEFAULTS` in `store.js`. `merge()` drops unknown keys and replaces
 values whose type doesn't match the default (a default of `null` accepts anything). A nested
 object default only keeps the keys it lists, so free-form maps (e.g. `trainer.stats`) must default
-to `null` and be initialised in code (`trainer.stats` = `{ notes, pos, days, streak }`; `streak` =
+to `null` and be initialised in code (`trainer.stats` = `{ notes, pos, days, streak }`; each `notes`/`pos`/`days`
+record is `[asked, correct, msSum, timedN]` — the last two (answer times of right answers, added later, so may be
+missing) drive the speed points, "🐢 slow" flags and the slow-note weighting of "Focus on weak spots"; `streak` =
 `{ count, last, best }` for the 50-notes-a-day streak, rebuilt from `days` by `initStreak` when missing). To change a default for people who already have the old one
 saved, bump a version key and migrate once in `store.js` (see `trainer.version`).
 
