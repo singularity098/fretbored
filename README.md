@@ -2,6 +2,8 @@
 
 Guitar scales, chords, circle of fifths and a precise metronome — in the browser, with no dependencies.
 
+![Fretbored's Scales tab: C major across the whole fretboard](docs/screenshots/desktop-scales.png)
+
 - **Scales**: any key, ~55 scales across Common / Rare / Exotic. Click frets to add or remove notes and Fretbored works out which scale you've made; right-click or long-press to change the root.
 - **Chords**: 12 core chord types plus ~25 advanced ones, generated as playable voicings for your tuning in several positions up the neck, shown as a chord diagram and as tablature (e.g. x32010). Edit the shape and the chord is re-identified (including slash chords).
 - **Arpeggios**: arpeggio shapes for every chord type — the five CAGED positions or sweep-picking shapes (6/5/4/3-string) — shown on the fretboard and as tablature, with up/down playback from slow up to “max shred” (20 notes a second). Tap notes on the fretboard to build your own shape and the arpeggio is identified that follows along in the tab.
@@ -13,6 +15,25 @@ Guitar scales, chords, circle of fifths and a precise metronome — in the brows
 - App colour themes: Dark (default), Light, AMOLED Black, Dracula, Solarized, Tokyo Night and Catppuccin Latte / Frappé / Macchiato / Mocha — pick one from the palette button at the top.
 - Back up everything (settings, custom tunings, Trainer history and streak) to a file and import it on another device — the ⤒ button at the top.
 - On phones, swipe the page left or right to move between tabs — the page follows your finger.
+
+## Screenshots
+
+| Chords | Arpeggios |
+| --- | --- |
+| ![Chords tab](docs/screenshots/desktop-chords.png) | ![Arpeggios tab](docs/screenshots/desktop-arpeggios.png) |
+| **Trainer** | **Circle of Fifths** |
+| ![Trainer tab](docs/screenshots/desktop-trainer.png) | ![Circle of Fifths tab](docs/screenshots/desktop-circle.png) |
+| **Tuner** | **Metronome** |
+| ![Tuner tab](docs/screenshots/desktop-tuner.png) | ![Metronome tab](docs/screenshots/desktop-metronome.png) |
+
+On a phone (vertical fretboard layout):
+
+<p>
+  <img src="docs/screenshots/phone-scales.png" width="190" alt="Scales on a phone">
+  <img src="docs/screenshots/phone-chords.png" width="190" alt="Chords on a phone">
+  <img src="docs/screenshots/phone-arpeggios.png" width="190" alt="Arpeggios on a phone">
+  <img src="docs/screenshots/phone-metronome.png" width="190" alt="Metronome on a phone">
+</p>
 
 ## Running it
 
@@ -51,6 +72,7 @@ Live site: **https://singularity098.github.io/fretbored/**
 - `node tests/pitch.test.js` — pitch detector accuracy tests.
 - `node tests/smoke.browser.js` — headless-Chromium smoke test of every tab (desktop + phone); needs Playwright.
 - `node tests/pwa.browser.js` — installable-app test (installability, offline, updates) over a local server.
+- `node tools/screenshots.js [tab ...]` — re-captures the README screenshots in `docs/screenshots/` (default settings, desktop + phone).
 - `node tools/make-icons.js` — re-renders the PNG app icons from `assets/icon.svg` / `assets/icon-maskable.svg`.
 - `CLAUDE.md` — architecture, conventions and hard-won browser notes for AI-assisted development.
 - `node tools/embed-sounds.js` — regenerates `js/sounds.js` after changing files in `assets/sounds/`.
