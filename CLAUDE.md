@@ -177,6 +177,10 @@ node tests/pwa.browser.js      # installable app: installability, precache list,
   afterwards — `goto` to the same page with a different `#hash` does not reload it.
 - Long timers (the 60-second challenge) are tested with Playwright's fake clock (`page.clock`).
 - Look at screenshots after UI changes (phone 390×844 and desktop).
+- README screenshots live in `docs/screenshots/` and come from `node tools/screenshots.js [tab ...]`
+  (default settings from a cleared localStorage; desktop 1280×860 every tab, phone 390×844 @2x with the
+  vertical board for Scales/Chords/Arpeggios/Metronome). Re-run it after visible UI changes and look at
+  the results before committing.
 
 ## Workflow and deployment
 
