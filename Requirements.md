@@ -2,7 +2,7 @@
 - Beautiful interface with dark theme by default. Other app colour themes from the palette button in the top bar: Light (blue → indigo accents), AMOLED Black (pure black page, near-black boxes, neon cyan → blue accents), Dracula (pink → purple), Solarized dark (yellow → orange), Tokyo Night (night variant; blue → cyan) and the four Catppuccin flavours — Latte (light; mauve → pink), Frappé (green → teal), Macchiato (peach → red) and Mocha (mauve → pink), using the official palettes. Dark keeps the coral → violet accents. Each theme has its own accent colours so active buttons look different per theme. The choice is remembered. (Charcoal and Solarized Light were tried and removed at the owner's request; a saved removed theme falls back to Dark)
 - Works in a web browser with no dependencies
   - Plain HTML, CSS and JavaScript — no build step, no libraries, no network requests
-  - Works when `index.html` is opened directly from disk (offline); the metronome sounds are embedded in the page
+  - Works when `index.html` is opened directly from disk (offline); all sounds, metronome clicks included, are generated in code
   - Hosted on GitHub Pages
   - Installable as an app from the hosted site (PWA): own icon (incl. Android maskable icon), full screen, works offline; an Install button appears in the top bar when the browser offers installation; updates are fetched in the background and used on the next launch
 - Works both in desktop browsers and mobile
@@ -90,7 +90,7 @@
   - Meter: 1–16 beats over 2, 4, 8 or 16; beat grouping for compound/odd meters (e.g. 7/8 as 2+2+3)
   - Per-beat accents: tap a beat to cycle accent / normal / soft / mute
   - Subdivisions: eighths, triplets, sixteenths, quintuplets, sextuplets, swing, dotted, and mixed 8th/16th figures
-  - Sounds: Classic and Digital (the supplied samples) and Beep; separate volume for subdivisions
+  - Sounds: Classic, Digital and Beep, generated in code and identical to the NAMsayin plugin's metronome (Classic recreates the originally supplied click exactly; Digital is NAMsayin's square-wave click, replacing the supplied sample); separate volume for subdivisions
   - Visual sync: for devices whose audio comes out late or early (e.g. Bluetooth speakers), a slider shifts the beat lights and sweep from 100 ms earlier to 300 ms later, in 5 ms steps (− / + buttons for fine steps, Reset). Only the visuals move; the audio timing is untouched. Remembered per device
   - Trainer: Step mode (+N BPM every M bars from start to end tempo) and Gradual mode (smooth ramp over N bars); works for slowing down too
   - Gap trainer: play N bars, then mute M bars to test internal time

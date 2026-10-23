@@ -481,6 +481,16 @@ const check = (label, actual, expected) => {
     // Metronome: one mixed buffer per beat; sixteenths at 120 BPM.
     await page.click('#tab-metronome');
     await page.waitForTimeout(250);
+    // Clicks are generated in code (NAMsayin's formulas): lengths, and edges that start and end at zero (no pops).
+    const clicks = await page.evaluate(async () => {
+      const S = await FS.audio.loadSamples();
+      return ['high', 'low', 'digitalHigh', 'digitalLow', 'beepHigh', 'beepMid', 'beepLow'].map((k) => {
+        const d = S[k].getChannelData(0);
+        const peak = d.reduce((a, v) => Math.max(a, Math.abs(v)), 0);
+        return `${k}:${Math.round(S[k].duration * 1000)}${Math.abs(d[0]) < 0.01 && Math.abs(d[d.length - 1]) < 0.01 && peak > 0.4 ? '' : '!'}`;
+      }).join(' ');
+    });
+    check(`${P} metronome: generated click sounds`, clicks, 'high:50 low:50 digitalHigh:60 digitalLow:60 beepHigh:60 beepMid:60 beepLow:50');
     await page.evaluate(() => {
       window.__beats = [];
       const orig = FS.audio.playBuffer;

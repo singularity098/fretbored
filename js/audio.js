@@ -258,59 +258,56 @@
     return src;
   }
 
-  /* ---- Click samples ---- */
+  /* ---- Click sounds ---- */
 
-  function decode(b64) {
-    const bin = atob(b64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  // All generated in code at the context's rate, the same formulas as the NAMsayin plugin's metronome
+  // (src/engine/metronome/Metronome.cpp), so both sound identical.
+  function makeBuffer(seconds, fn) {
     const c = getCtx();
-    // Callback form for older Safari.
-    return new Promise((resolve, reject) => c.decodeAudioData(bytes.buffer, resolve, reject)).then(smoothEdges);
+    const sr = c.sampleRate;
+    const len = Math.floor(sr * seconds);
+    const buf = c.createBuffer(1, len, sr);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = fn(i, i / sr, sr, len);
+    return buf;
   }
 
-  // Some samples start or end on a non-zero value (the classic clicks are cut off
-  // mid-decay), which pops. Fade the first 0.5 ms and last 6 ms to zero.
-  function smoothEdges(buf) {
-    const fadeIn = Math.floor(buf.sampleRate * 0.0005);
-    const fadeOut = Math.min(Math.floor(buf.sampleRate * 0.006), Math.floor(buf.length / 3));
-    for (let ch = 0; ch < buf.numberOfChannels; ch++) {
-      const d = buf.getChannelData(ch);
-      const n = d.length;
-      for (let i = 0; i < fadeIn; i++) d[i] *= i / fadeIn;
-      for (let i = 0; i < fadeOut; i++) d[n - 1 - i] *= i / fadeOut;
-    }
-    return buf;
+  // Classic: a tone with its 2nd and 3rd harmonics (0.5 : 0.15 : 0.05) decaying with a 50 ms time
+  // constant, cut off after 50 ms; 0.5 ms and 6 ms fades soften the start and keep the cut from popping.
+  // (Fitted exactly from the WAV samples the app used to embed.)
+  function classicClick(freq) {
+    return makeBuffer(0.05, (i, t, sr, len) => {
+      const w = 2 * Math.PI * freq * t;
+      const tone = 0.5 * Math.sin(w) + 0.15 * Math.sin(2 * w) + 0.05 * Math.sin(3 * w);
+      const fade = Math.min(1, i / (sr * 0.0005), (len - i) / Math.floor(sr * 0.006));
+      return tone * Math.exp(-t / 0.05) * fade;
+    });
+  }
+
+  // Digital: a short band-limited square wave (odd harmonics up to near Nyquist), held briefly, then a fast decay.
+  function digitalClick(freq) {
+    return makeBuffer(0.06, (i, t, sr) => {
+      let square = 0;
+      for (let k = 1; k * freq < 0.45 * sr; k += 2) square += Math.sin(2 * Math.PI * k * freq * t) / k;
+      const env = Math.min(1, i / 20) * (t < 0.02 ? 1 : Math.exp(-(t - 0.02) * 120));
+      return square * (4 / Math.PI) * env * 0.45;
+    });
   }
 
   function beep(freq, dur) {
-    const c = getCtx();
-    const len = Math.floor(c.sampleRate * dur);
-    const buf = c.createBuffer(1, len, c.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) {
-      const t = i / c.sampleRate;
-      const env = Math.min(1, i / 40) * Math.exp(-t * 60);
-      d[i] = Math.sin(2 * Math.PI * freq * t) * env * 0.9;
-    }
-    return buf;
+    return makeBuffer(dur, (i, t) => Math.sin(2 * Math.PI * freq * t) * Math.min(1, i / 40) * Math.exp(-t * 60) * 0.9);
   }
 
   function loadSamples() {
     if (!samplesPromise) {
-      const S = FS.SOUNDS || {};
-      samplesPromise = Promise.all(
-        Object.entries(S).map(([k, b64]) =>
-          decode(b64).then((buf) => {
-            samples[k] = buf;
-          })
-        )
-      ).then(() => {
-        samples.beepHigh = beep(1760, 0.06);
-        samples.beepMid = beep(1100, 0.06);
-        samples.beepLow = beep(880, 0.05);
-        return samples;
-      });
+      samples.high = classicClick(1500);
+      samples.low = classicClick(1000);
+      samples.digitalHigh = digitalClick(1975.5); // B6
+      samples.digitalLow = digitalClick(1318.5); // E6
+      samples.beepHigh = beep(1760, 0.06);
+      samples.beepMid = beep(1100, 0.06);
+      samples.beepLow = beep(880, 0.05);
+      samplesPromise = Promise.resolve(samples);
     }
     return samplesPromise;
   }

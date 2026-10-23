@@ -12,7 +12,6 @@ const FILES = [
   'index.html',
   'manifest.webmanifest',
   'css/style.css',
-  'js/sounds.js',
   'js/theory.js',
   'js/tunings.js',
   'js/store.js',

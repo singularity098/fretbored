@@ -37,7 +37,7 @@ On a phone (vertical fretboard layout):
 
 ## Running it
 
-Open `index.html` in a browser — that's it. It works offline from disk; everything (including the metronome sounds) is bundled.
+Open `index.html` in a browser — that's it. It works offline from disk; everything is bundled, and every sound (including the metronome clicks) is generated in code.
 
 To serve it locally instead: `npx http-server .` (or any static server).
 
@@ -75,7 +75,6 @@ Live site: **https://singularity098.github.io/fretbored/**
 - `node tools/screenshots.js [tab ...]` — re-captures the README screenshots in `docs/screenshots/` (default settings, desktop + phone).
 - `node tools/make-icons.js` — re-renders the PNG app icons from `assets/icon.svg` / `assets/icon-maskable.svg`.
 - `CLAUDE.md` — architecture, conventions and hard-won browser notes for AI-assisted development.
-- `node tools/embed-sounds.js` — regenerates `js/sounds.js` after changing files in `assets/sounds/`.
 
 | File | Purpose |
 | --- | --- |

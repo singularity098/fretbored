@@ -16,9 +16,8 @@ with user-visible changes — the owner asked for that.
 - **No dependencies, no build step.** Plain HTML/CSS/JS. No npm packages, CDNs, fonts or network
   requests at runtime.
 - **Must work when `index.html` is opened from disk (`file://`).** So scripts are classic
-  `<script>` tags (no ES modules — they're blocked on file://), and binary assets are embedded:
-  the metronome WAVs live base64-encoded in `js/sounds.js` (regenerate with
-  `node tools/embed-sounds.js` after changing `assets/sounds/*.wav`; never edit sounds.js by hand).
+  `<script>` tags (no ES modules — they're blocked on file://), and there are no sound files: every
+  sound (notes, reverb, metronome clicks) is generated in code.
   Exception: the tuner's microphone needs https, so it only works on the hosted site.
 - Dark theme by default (other app themes from the header palette menu); must work on desktop and phones.
 - Metronome timing must be sample-accurate (see Audio below).
@@ -43,11 +42,10 @@ Script order in `index.html` matters:
 
 | File | Provides |
 | --- | --- |
-| `js/sounds.js` | `FS.SOUNDS` — generated base64 WAVs |
 | `js/theory.js` | `FS.theory` — pitch classes as 12-bit masks, note spelling, scale library (~55, Common/Rare/Exotic), chord library (12 basic + ~25 advanced), `matchScale`, `identifyChord`, `generateVoicings`, `generateArpeggioShapes`, modes |
 | `js/tunings.js` | `FS.TUNINGS` presets (MIDI notes, lowest string first; `flats` flag for label spelling), string/fret options |
 | `js/store.js` | `FS.settings` (persisted in localStorage key `fretbored:v1` — the only thing the app stores; `FS.exportData()` / `FS.importData(obj)` back it up to / restore it from a JSON file via the header backup menu), `FS.save()`, event bus `FS.on/emit`, tuning helpers, `FS.toast`, DOM helper `FS.h(tag, attrs, ...children)` |
-| `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote(midi, when, dur, gain, {clean}?)`, `prepare`) through one shared guitar chain (`buildChain(ctx, {tone, reverb, delay}, dest)`, rebuilt when `fretboard.tone/reverb/delay` change, old chain freed after 6 s): `buildTone` = highpass → pre-gain → WaveShaper → peaking EQ → cabinet low-pass → level (`FS.TONES`: Clean, Overdriven — Distortion was removed by the owner as too messy; a saved one is reset to Clean in `store.js`), then delay (`FS.DELAYS`, feedback loop with a low-pass) and reverb (`FS.REVERBS`, ConvolverNode with a generated noise impulse) on parallel sends — nothing built while they're off. Palm mute (`fretboard.palmMute`) = a separate damped Karplus–Strong buffer (`makePluck(midi, muted)`, cached per note+mute, ×1.8 gain). `{clean:true}` (tuner) skips all of it. The smoke test renders offline to check tone levels, palm-mute decay, echo timing and reverb tails, click samples (`loadSamples`, `playSample`, `playBuffer`) |
+| `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote(midi, when, dur, gain, {clean}?)`, `prepare`) through one shared guitar chain (`buildChain(ctx, {tone, reverb, delay}, dest)`, rebuilt when `fretboard.tone/reverb/delay` change, old chain freed after 6 s): `buildTone` = highpass → pre-gain → WaveShaper → peaking EQ → cabinet low-pass → level (`FS.TONES`: Clean, Overdriven — Distortion was removed by the owner as too messy; a saved one is reset to Clean in `store.js`), then delay (`FS.DELAYS`, feedback loop with a low-pass) and reverb (`FS.REVERBS`, ConvolverNode with a generated noise impulse) on parallel sends — nothing built while they're off. Palm mute (`fretboard.palmMute`) = a separate damped Karplus–Strong buffer (`makePluck(midi, muted)`, cached per note+mute, ×1.8 gain). `{clean:true}` (tuner) skips all of it. The smoke test renders offline to check tone levels, palm-mute decay, echo timing and reverb tails; metronome clicks (`loadSamples`, `playSample`, `playBuffer`) — see Audio below |
 | `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Arpeggios/Trainer), woods (`FS.WOODS`), horizontal/vertical layout, tap / long-press / right-click handling. Dot colours come from the app theme (see below). Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f), focus?: {lo, hi} }` — `color` overrides the theme (dark label), `isActive` shades other cells, `focus` (Chords/Arpeggios) crops a vertical board to those frets via the SVG viewBox (`cropRange`) unless `fretboard.wholeNeck`; the toggle button is added after the host |
 | `js/fbcontrols.js` | Shared "Guitar settings" bar (was "Fretboard settings") (inside a collapsible `details.fb-settings`, open state in `fretboard.controlsOpen`, synced across tabs via the `fbcontrols:open` event) + custom tuning editor dialog |
 | `js/nowbar.js` | Pinned "now viewing" bar shown while a tab's title is out of view — at the top when scrolled past it, at the bottom while it is still below the screen |
@@ -125,7 +123,11 @@ different. A note's `color` (trainer feedback) still overrides the theme.
   single cached AudioBuffer and played with one node (`FS.audio.playBuffer`). Do not go back to a
   node per click — see Firefox below.
 - The owner tried a 300 ms lookahead and asked for it to be reverted (it delays setting changes).
-- Click samples are edge-faded on decode (the classic WAVs are truncated mid-decay and popped).
+- Click sounds are generated in `audio.js` (`classicClick`, `digitalClick`, `beep`) with the exact formulas of
+  the NAMsayin plugin's metronome (`src/engine/metronome/Metronome.cpp` in singularity098/namsayin), so the
+  two sound identical (verified bit-for-bit against the compiled C++ at 44.1 kHz). Classic was fitted from the
+  WAVs the app used to embed (zero residual); Digital replaced its WAV with NAMsayin's band-limited square.
+  Change a sound in both projects, or they drift apart. Gains (`LEVEL_GAIN`, subdivisions × 0.75) match too.
 - `latencyHint: 'playback'` on the AudioContext.
 - Visual sync (`metronome.syncMs`, −100…+300 ms): `draw()` uses `audibleNow() - syncMs`, so only the
   visuals shift. The earliest setting is bounded by `LOOKAHEAD` — beats must already be queued to be
