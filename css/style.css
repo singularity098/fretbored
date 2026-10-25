@@ -338,7 +338,10 @@ button { cursor: pointer; }
   letter-spacing: -0.01em;
   font-weight: 600;
 }
-.brand b { font-weight: 800; background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+/* Wordmark: Audiowide glyphs converted to SVG paths (no web fonts at runtime) */
+.wordmark { height: 19px; width: auto; flex: none; display: block; }
+.wm-fret { fill: var(--text); }
+.wm-bored { fill: var(--accent-2); }
 .logo { width: 30px; height: 30px; flex: none; }
 
 .tabs {

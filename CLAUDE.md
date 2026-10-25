@@ -71,9 +71,13 @@ missing) drive the speed points, "🐢 slow" flags and the slow-note weighting o
 `{ count, last, best }` for the 50-notes-a-day streak, rebuilt from `days` by `initStreak` when missing). To change a default for people who already have the old one
 saved, bump a version key and migrate once in `store.js` (see `trainer.version`).
 
-The app icon (`assets/icon.svg`) uses the same Circle colours. It is duplicated inline in
-`index.html` as the favicon data URI and the header `.logo` SVG, and as `assets/icon-maskable.svg`
-+ the PNGs in `assets/icons/` — keep them all in sync.
+The app icon (`assets/icon.svg`, owner's pick from a set of mock-ups) is a fretboard tile whose note
+dots spell an F — violet dots, coral root dot top-left (the Dark theme's dot colours). It is duplicated
+inline in `index.html` as the favicon data URI and the header `.logo` SVG, and as
+`assets/icon-maskable.svg` (same artwork scaled 0.78 into the safe zone) + the PNGs in `assets/icons/` —
+keep them all in sync. The header name is the `.wordmark` SVG: "Fret" + "bored" set in Audiowide (SIL OFL)
+and converted to two paths (`.wm-fret` → `--text`, `.wm-bored` → `--accent-2`) because the app can't
+load fonts; `tools/make-wordmark.py` regenerates the paths (dev-time only, needs fontTools + the TTF).
 
 App colour themes: `THEMES` in `app.js` (id, name, swatch colours; the first swatch colour is the
 browser `theme-color`) + a `:root[data-theme='id']` block of variables in `style.css`. Each theme sets its own

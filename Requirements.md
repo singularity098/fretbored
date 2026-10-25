@@ -1,5 +1,6 @@
 ### Fretbored
 - Beautiful interface with dark theme by default. Other app colour themes from the palette button in the top bar: Light (blue → indigo accents), AMOLED Black (pure black page, near-black boxes, neon cyan → blue accents), Dracula (pink → purple), Solarized dark (yellow → orange), Tokyo Night (night variant; blue → cyan) and the four Catppuccin flavours — Latte (light; mauve → pink), Frappé (green → teal), Macchiato (peach → red) and Mocha (mauve → pink), using the official palettes. Dark keeps the coral → violet accents. Each theme has its own accent colours so active buttons look different per theme. The choice is remembered. (Charcoal and Solarized Light were tried and removed at the owner's request; a saved removed theme falls back to Dark)
+- Logo (owner's choice): a fretboard-tile icon whose note dots spell an F, next to the name "Fretbored" in the Audiowide typeface ("bored" in the theme's second accent colour); the lettering is drawn as SVG shapes, so no font is downloaded
 - Works in a web browser with no dependencies
   - Plain HTML, CSS and JavaScript — no build step, no libraries, no network requests
   - Works when `index.html` is opened directly from disk (offline); all sounds, metronome clicks included, are generated in code
