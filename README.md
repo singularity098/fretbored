@@ -1,6 +1,6 @@
 # <img src="assets/icon.svg" width="32" height="32" alt=""> Fretbored
 
-Guitar scales, chords, circle of fifths and a precise metronome — in the browser, with no dependencies.
+Guitar scales, chords, circle of fifths and a precise metronome — in the browser, with no dependencies. 
 
 ![Fretbored's Scales tab: C major across the whole fretboard](docs/screenshots/desktop-scales.png)
 
