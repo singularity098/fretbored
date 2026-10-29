@@ -1137,53 +1137,50 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
 /* Any style: a note being played flashes white. */
 :root[data-style] .fretboard .note:is(.playing-a, .playing-b) .dot { stroke: #fff; stroke-width: 3; }
 
-/* ---- Ring: dark dots with a coloured ring and label; outlined active buttons and tabs */
+/* Ring and Target keep their shapes but take Classic's accent gradient: a ring drawn by a masked
+ * pseudo-element (a gradient border can't be a box-shadow). --ring-w sets its width. */
+:root[data-style='ring'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary, .seg button.active),
+:root[data-style='halo'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary) { position: relative; }
+:root[data-style='ring'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary, .seg button.active)::after,
+:root[data-style='halo'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary)::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: var(--ring-w, 2px); pointer-events: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+
+/* ---- Ring: dark dots with a coloured ring and label; active buttons and tabs outlined in the accent gradient */
 :root[data-style='ring'] :is(.fretboard .note .dot, .cb-dot) { fill: var(--ring-fill); stroke: var(--dot); stroke-width: 2.5; }
 :root[data-style='ring'] :is(.fretboard .note.root .dot, .cb-dot.root) { stroke-width: 3.5; }
 :root[data-style='ring'] .fretboard .note text { fill: color-mix(in srgb, var(--dot) 80%, white); }
 :root[data-style='ring'] .fretboard .note.faint .dot { opacity: 0.6; stroke-width: 1.5; }
 :root[data-style='ring'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary) {
-  background: var(--bg); color: var(--accent-text); border-color: transparent;
-  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--bg); color: var(--accent-text); border-color: transparent; box-shadow: none;
 }
-:root[data-style='ring'] .seg button.active { background: var(--bg); box-shadow: inset 0 0 0 1.5px var(--accent-2); }
-:root[data-style='ring'] .switch input:checked + .slider { background: var(--bg); box-shadow: inset 0 0 0 2px var(--accent); border-color: transparent; }
-:root[data-style='ring'] .switch input:checked + .slider::after { background: var(--accent); }
+:root[data-style='ring'] .seg button.active { --ring-w: 1.5px; background: var(--bg); box-shadow: none; }
+:root[data-style='ring'] .switch input:checked + .slider {
+  border: 2px solid transparent; box-shadow: none;
+  background: linear-gradient(var(--bg), var(--bg)) padding-box, linear-gradient(135deg, var(--accent), var(--accent-2)) border-box;
+}
+:root[data-style='ring'] .switch input:checked + .slider::after { top: 2px; left: 2px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
 :root[data-style='ring'] .beat-dot.on span { background: var(--bg); color: var(--accent-text); border-color: var(--accent); border-width: 3px; box-shadow: none; }
 :root[data-style='ring'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { background: var(--bg); color: var(--text); border-color: var(--accent-2); }
 
-/* ---- Neon: ring dots that glow; glowing outlined buttons and tabs */
-:root[data-style='neon'] :is(.fretboard .note .dot, .cb-dot) { fill: var(--ring-fill); stroke: var(--dot); stroke-width: 2; filter: drop-shadow(0 0 4px var(--dot)); }
-:root[data-style='neon'] .fretboard .note text { fill: color-mix(in srgb, var(--dot) 55%, white); }
-:root[data-style='neon'] .fretboard .note.root .halo { opacity: 0.8; stroke-width: 1.5; filter: drop-shadow(0 0 3px var(--dot)); }
-:root[data-style='neon'] .fretboard .note.faint .dot { filter: none; opacity: 0.5; stroke-width: 1.2; }
-:root[data-style='neon'] .fretboard .fret { stroke: color-mix(in srgb, var(--fret) 70%, var(--accent-2)); }
-:root[data-style='neon'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary) {
-  background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent-text); border-color: transparent;
-  box-shadow: inset 0 0 0 1.5px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 55%, transparent), inset 0 0 8px color-mix(in srgb, var(--accent) 35%, transparent);
-  text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
-}
-:root[data-style='neon'] .seg button.active { background: transparent; color: var(--accent-text); box-shadow: inset 0 0 0 1px var(--accent-2), 0 0 8px color-mix(in srgb, var(--accent-2) 45%, transparent); }
-:root[data-style='neon'] .switch input:checked + .slider { background: transparent; box-shadow: inset 0 0 0 2px var(--accent), 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent); border-color: transparent; }
-:root[data-style='neon'] .switch input:checked + .slider::after { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-:root[data-style='neon'] .beat-dot.on span { background: transparent; color: var(--accent-text); border-color: var(--accent); }
-:root[data-style='neon'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { background: transparent; color: var(--text); border-color: var(--accent-2); }
-
-/* ---- Target: a solid dot inside a ring of its colour; solid buttons with a double ring */
+/* ---- Target: a solid dot inside a ring of its colour; gradient buttons with a double ring
+ * (the gap between the rings is the masked ::after above, filled with the page colour). */
 :root[data-style='halo'] :is(.fretboard .note .dot, .cb-dot) { stroke: var(--ring-fill); stroke-width: 1.5; }
 :root[data-style='halo'] .fretboard .note:not(.faint) .halo { display: inline; opacity: 0.95; stroke-width: 2; }
 :root[data-style='halo'] .fretboard .note.root .halo { stroke-width: 3; }
 :root[data-style='halo'] .cb-dot.root { stroke: var(--dot); stroke-width: 2; }
 :root[data-style='halo'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary) {
-  background: var(--accent); color: var(--on-accent); border-color: transparent;
-  box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 0 4px var(--bg);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--on-accent); border-color: transparent; box-shadow: none;
 }
-:root[data-style='halo'] .switch input:checked + .slider { background: var(--accent); box-shadow: inset 0 0 0 2px var(--bg); }
+:root[data-style='halo'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary)::after { inset: 2px; background: var(--bg); }
+:root[data-style='halo'] .switch input:checked + .slider { background: linear-gradient(135deg, var(--accent), var(--accent-2)); box-shadow: inset 0 0 0 2px var(--bg); }
 :root[data-style='halo'] .beat-dot.on span { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
 :root[data-style='halo'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-2); }
 
 /* Phones: no glows on the metronome lights (repaints can starve audio — see CLAUDE.md). */
 @media (max-width: 760px) {
   :root[data-style] .beat-dot.on span { text-shadow: none; }
-  :root[data-style='neon'] .beat-dot.on span { box-shadow: none; }
 }

@@ -246,7 +246,8 @@
       const timers = [];
       seq.forEach((x, i) => {
         const when = t0 + i * step;
-        FS.audio.playNote(x.midi + bump(), when, i === seq.length - 1 ? 1.4 : step * 1.8, 0.5);
+        // The last note is as long as the others (it used to ring for 1.4 s, which sounded unnatural).
+        FS.audio.playNote(x.midi + bump(), when, step * 1.8, 0.5);
         timers.push(setTimeout(() => {
           board.flash(x.midi, step * 1000);
           highlightTab(i);

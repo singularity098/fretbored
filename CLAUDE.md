@@ -94,8 +94,8 @@ Dark keeps the circle-of-fifths colours (coral root, violet notes, white labels)
 has its own pair from its palette — keep pairs distinct between themes and root vs notes clearly
 different. A note's `color` (trainer feedback) still overrides the theme.
 
-App styles (owner asked for them): Classic (the original look), Ring (**default** — owner's pick), Neon and
-Target (id `halo`). Glass, Flat, Pixel, Sticker and Pearl were tried and removed by the owner; a saved
+App styles (owner asked for them): Ring (**default** — owner's pick, listed first), Classic (the original look)
+and Target (id `halo`). Glass, Flat, Pixel, Sticker, Pearl and Neon were tried and removed by the owner; a saved
 removed style falls back to Ring (`applyStyle`), and `styleVersion` moved everyone to Ring once (`store.js`).
 `STYLES` in `app.js` (`settings.style`, `<html data-style>`), picked in the "Style" column of the palette menu (the menu has a
 "Colours" column and a "Style" column — stacked and scrollable on phones; each style item has a drawn
@@ -103,10 +103,12 @@ preview, `stylePreview`). Style is independent of the colour theme: a style only
 fills, rings, glows and shadows, and takes every colour from the theme. Classic has no rules; each other
 style is a `:root[data-style='id']` block at the end of `style.css` covering note dots (fretboard + chord
 diagram `.cb-dot`, which carries `--dot`), active tabs, pills, primary buttons, segmented buttons,
-switches and metronome beat lights. Ring/Neon/Target use `--ring-fill` (a fixed near-black) for dots.
+switches and metronome beat lights. Ring/Target use `--ring-fill` (a fixed near-black) for dots.
 In `fretboard.js` every non-faint note gets a `.halo` ring (shown only on the root, or on all notes in
 Target, which also shrinks the dot to 0.78 r so rings on neighbouring strings don't touch). A style
 change emits `fretboard` to redraw. Theme-colour tests read the dot's `stroke` (Ring's fill is dark).
+Ring and Target borrow Classic's accent gradient for active buttons/tabs/pills: a gradient ring drawn by a masked
+`::after` (`--ring-w`; Target's is the page-coloured gap between its two rings) — box-shadows can't be gradients.
 Adding a style: `STYLES` + `stylePreview` case + CSS block + the smoke test's style list.
 
 ### Music-theory conventions

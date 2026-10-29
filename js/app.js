@@ -23,11 +23,10 @@
 
   // App styles: the look of note dots, buttons and tabs, independent of the colour theme (the rules
   // live in style.css as :root[data-style=…]; Classic is the original look and has none). Ring is
-  // the default; a saved style that was removed (Glass, Flat, Pixel, Sticker, Pearl) falls back to it.
+  // the default; a saved style that was removed (Glass, Flat, Pixel, Sticker, Pearl, Neon) falls back to it.
   const STYLES = [
-    { id: 'classic', name: 'Classic' },
     { id: 'ring', name: 'Ring' },
-    { id: 'neon', name: 'Neon' },
+    { id: 'classic', name: 'Classic' },
     { id: 'halo', name: 'Target' },
   ];
   FS.STYLES = STYLES;
@@ -38,7 +37,6 @@
       const ring = '#0e1014';
       switch (id) {
         case 'ring': return `<circle cx="${cx}" cy="10" r="7" style="fill:${ring};stroke:${c};stroke-width:2.2"/>`;
-        case 'neon': return `<circle cx="${cx}" cy="10" r="7" style="fill:${ring};stroke:${c};stroke-width:1.8;filter:drop-shadow(0 0 2.5px ${c})"/>`;
         case 'halo': return `<circle cx="${cx}" cy="10" r="8.5" style="fill:none;stroke:${c};stroke-width:1.4"/><circle cx="${cx}" cy="10" r="5.5" style="fill:${c}"/>`;
         default: return `<circle cx="${cx}" cy="10" r="7" style="fill:${c};stroke:rgba(0,0,0,.35)"/>`;
       }

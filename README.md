@@ -13,7 +13,7 @@ Guitar scales, chords, circle of fifths and a precise metronome — in the brows
 - **Metronome**: tap tempo, accents, odd-meter grouping, subdivisions, step and gradual tempo trainer, gap trainer, and a visual-sync adjustment for devices with audio delay. Sample-accurate Web Audio scheduling.
 - Shared fretboard settings: 4–8 strings (guitar and bass), preset and custom tunings, 21/22/24 frets, note or interval labels (note dot colours follow the app theme), clean or overdriven guitar tone with palm mute, reverb and delay, ebony/rosewood/maple, left-handed mode, and a sideways or vertical layout on phones (the vertical board on Chords and Arpeggios shows just the current shape, with a button for the whole neck).
 - App colour themes: Dark (default), Light, AMOLED Black, Dracula, Solarized, Tokyo Night and Catppuccin Latte / Frappé / Macchiato / Mocha — pick one from the palette button at the top.
-- App styles for the note dots, buttons and tabs, combined with any colour theme: Ring (default: dark dots with a coloured ring), Classic (filled dots), Neon and Target — in the same palette menu.
+- App styles for the note dots, buttons and tabs, combined with any colour theme: Ring (default: dark dots with a coloured ring), Classic (filled dots) and Target — in the same palette menu.
 - Back up everything (settings, custom tunings, Trainer history and streak) to a file and import it on another device — the ⤒ button at the top.
 - On phones, swipe the page left or right to move between tabs — the page follows your finger.
 

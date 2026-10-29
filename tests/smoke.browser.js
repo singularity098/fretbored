@@ -118,8 +118,8 @@ const check = (label, actual, expected) => {
     // App styles (palette menu, beside the colour themes): Ring is the default; each one applies
     // and is remembered; Ring draws dark dots with a ring in the theme's colour.
     check(`${P} default style`, await page.$eval('html', (e) => e.dataset.style), 'ring');
-    check(`${P} style menu items`, (await page.$$eval('#theme-menu [data-style]', (b) => b.map((x) => x.dataset.style))).join(' '), 'classic ring neon halo');
-    for (const st of ['classic', 'neon', 'halo']) {
+    check(`${P} style menu items`, (await page.$$eval('#theme-menu [data-style]', (b) => b.map((x) => x.dataset.style))).join(' '), 'ring classic halo');
+    for (const st of ['classic', 'halo']) {
       await page.click('#theme-btn');
       await page.click(`#theme-menu [data-style="${st}"]`);
       await page.waitForTimeout(100);
