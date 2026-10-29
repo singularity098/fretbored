@@ -99,8 +99,9 @@ const check = (label, actual, expected) => {
       check(`${P} theme menu closes`, String(await page.$eval('#theme-menu', (m) => m.hidden)), 'true');
       if (th !== 'dark') await shot(`theme-${th}`);
     }
-    // Note dots take their colours from the app theme (no separate dot-colour picker).
-    const rootFill = () => page.$eval('#panel-scales .fretboard .note.root .dot', (c) => getComputedStyle(c).fill);
+    // Note dots take their colours from the app theme (no separate dot-colour picker); in the default
+    // Ring style that colour is the ring (stroke).
+    const rootFill = () => page.$eval('#panel-scales .fretboard .note.root .dot', (c) => getComputedStyle(c).stroke);
     check(`${P} dark theme root dot colour`, await rootFill(), 'rgb(255, 122, 89)');
     check(`${P} no dot-colour picker`, String(await page.$$eval('.fb-settings .swatch', (s) => s.length)), '0');
     await page.click('#theme-btn');
@@ -114,33 +115,34 @@ const check = (label, actual, expected) => {
     await page.click('#theme-menu [data-id="dark"]');
     await page.waitForTimeout(100);
 
-    // App styles (palette menu, beside the colour themes): Classic is the default; each one applies
-    // and is remembered; Ring draws dark dots with a ring in the theme's colour; Pixel draws squares.
-    check(`${P} default style`, await page.$eval('html', (e) => e.dataset.style), 'classic');
-    for (const st of ['ring', 'neon', 'halo', 'glass', 'flat', 'pixel', 'sticker', 'pearl']) {
+    // App styles (palette menu, beside the colour themes): Ring is the default; each one applies
+    // and is remembered; Ring draws dark dots with a ring in the theme's colour.
+    check(`${P} default style`, await page.$eval('html', (e) => e.dataset.style), 'ring');
+    check(`${P} style menu items`, (await page.$$eval('#theme-menu [data-style]', (b) => b.map((x) => x.dataset.style))).join(' '), 'classic ring neon halo');
+    for (const st of ['classic', 'neon', 'halo']) {
       await page.click('#theme-btn');
       await page.click(`#theme-menu [data-style="${st}"]`);
       await page.waitForTimeout(100);
       check(`${P} style ${st} applied`, await page.$eval('html', (e) => e.dataset.style), st);
       check(`${P} style ${st} checked in menu`, await page.$eval(`#theme-menu [data-style="${st}"]`, (b) => b.getAttribute('aria-checked')), 'true');
       await shot(`style-${st}`);
-      if (st === 'pixel') check(`${P} pixel style draws square dots`, await page.$eval('#panel-scales .fretboard .note.root .dot', (d) => d.tagName), 'rect');
-      if (st === 'pearl') check(`${P} pearl style adds a sheen`, String(await page.$$eval('#panel-scales .fretboard .sheen', (s) => s.length > 0)), 'true');
+      if (st === 'halo') check(`${P} target style rings every note`, String(await page.$$eval('#panel-scales .fretboard .note:not(.faint) .halo', (h) => h.every((x) => getComputedStyle(x).display !== 'none'))), 'true');
     }
     await page.click('#theme-btn');
     await page.click('#theme-menu [data-style="ring"]');
     await page.waitForTimeout(300);
     check(`${P} ring style: root ring in theme colour`, await page.$eval('#panel-scales .fretboard .note.root .dot', (c) => getComputedStyle(c).stroke), 'rgb(255, 122, 89)');
     check(`${P} ring style: dark fill`, await page.$eval('#panel-scales .fretboard .note.root .dot', (c) => getComputedStyle(c).fill), 'rgb(14, 16, 20)');
-    check(`${P} sheen gone after leaving pearl`, String(await page.$$eval('#panel-scales .fretboard .sheen', (s) => s.length)), '0');
     check(`${P} ring style: theme still dark`, await page.$eval('html', (e) => e.dataset.theme), 'dark');
     await page.reload();
     await page.waitForTimeout(300);
     check(`${P} style remembered`, await page.$eval('html', (e) => e.dataset.style), 'ring');
-    check(`${P} classic dots are circles`, await page.$eval('#panel-scales .fretboard .note.root .dot', (d) => d.tagName), 'circle');
-    await page.click('#theme-btn');
-    await page.click('#theme-menu [data-style="classic"]');
-    await page.waitForTimeout(100);
+    // A removed style (e.g. Pixel) saved in storage falls back to Ring.
+    await page.evaluate(() => { FS.settings.style = 'pixel'; FS.save(); });
+    await page.waitForTimeout(300);
+    await page.reload();
+    await page.waitForTimeout(300);
+    check(`${P} removed style falls back to ring`, await page.$eval('html', (e) => e.dataset.style), 'ring');
 
     // Guitar settings: folded by default; opening it on one tab opens it on the others and is remembered.
     const fbOpen = (tab) => page.$eval(`#panel-${tab} .fb-settings`, (d) => d.open);

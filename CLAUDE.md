@@ -46,7 +46,7 @@ Script order in `index.html` matters:
 | `js/tunings.js` | `FS.TUNINGS` presets (MIDI notes, lowest string first; `flats` flag for label spelling), string/fret options |
 | `js/store.js` | `FS.settings` (persisted in localStorage key `fretbored:v1` — the only thing the app stores; `FS.exportData()` / `FS.importData(obj)` back it up to / restore it from a JSON file via the header backup menu), `FS.save()`, event bus `FS.on/emit`, tuning helpers, `FS.toast`, DOM helper `FS.h(tag, attrs, ...children)` |
 | `js/audio.js` | Shared AudioContext (`FS.audio.ctx()`), Karplus–Strong pluck synth (`playNote(midi, when, dur, gain, {clean}?)`, `prepare`) through one shared guitar chain (`buildChain(ctx, {tone, reverb, delay}, dest)`, rebuilt when `fretboard.tone/reverb/delay` change, old chain freed after 6 s): `buildTone` = highpass → pre-gain → WaveShaper → peaking EQ → cabinet low-pass → level (`FS.TONES`: Clean, Overdriven — Distortion was removed by the owner as too messy; a saved one is reset to Clean in `store.js`), then delay (`FS.DELAYS`, feedback loop with a low-pass) and reverb (`FS.REVERBS`, ConvolverNode with a generated noise impulse) on parallel sends — nothing built while they're off. Palm mute (`fretboard.palmMute`) = a separate damped Karplus–Strong buffer (`makePluck(midi, muted)`, cached per note+mute, ×1.8 gain). `{clean:true}` (tuner) skips all of it. The smoke test renders offline to check tone levels, palm-mute decay, echo timing and reverb tails; metronome clicks (`loadSamples`, `playSample`, `playBuffer`) — see Audio below |
-| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Arpeggios/Trainer), woods (`FS.WOODS`), horizontal/vertical layout, tap / long-press / right-click handling. Dot colours come from the app theme, their look from the app style (see below; `FS.dotShape`). Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f), focus?: {lo, hi} }` — `color` overrides the theme (dark label), `isActive` shades other cells, `focus` (Chords/Arpeggios) crops a vertical board to those frets via the SVG viewBox (`cropRange`) unless `fretboard.wholeNeck`; the toggle button is added after the host |
+| `js/fretboard.js` | `FS.Fretboard` SVG component (shared by Scales/Chords/Arpeggios/Trainer), woods (`FS.WOODS`), horizontal/vertical layout, tap / long-press / right-click handling. Dot colours come from the app theme, their look from the app style (see below). Model: `{ notes: [{s, f, kind: 'root'|'note'|'faint', label, iv?, color?}], muted, isActive?(s, f), focus?: {lo, hi} }` — `color` overrides the theme (dark label), `isActive` shades other cells, `focus` (Chords/Arpeggios) crops a vertical board to those frets via the SVG viewBox (`cropRange`) unless `fretboard.wholeNeck`; the toggle button is added after the host |
 | `js/fbcontrols.js` | Shared "Guitar settings" bar (was "Fretboard settings") (inside a collapsible `details.fb-settings`, open state in `fretboard.controlsOpen`, synced across tabs via the `fbcontrols:open` event) + custom tuning editor dialog |
 | `js/nowbar.js` | Pinned "now viewing" bar shown while a tab's title is out of view — at the top when scrolled past it, at the bottom while it is still below the screen |
 | `js/scales.js`, `chords.js`, `arpeggios.js`, `circle.js`, `trainer.js`, `metronome.js`, `tuner.js` | One `FS.init<Tab>(panel)` per tab. Adding a tab: button + panel in `index.html`, script tag, `TABS` and the init map in `app.js`, defaults in `store.js`, a section in `tests/smoke.browser.js` |
@@ -94,18 +94,19 @@ Dark keeps the circle-of-fifths colours (coral root, violet notes, white labels)
 has its own pair from its palette — keep pairs distinct between themes and root vs notes clearly
 different. A note's `color` (trainer feedback) still overrides the theme.
 
-App styles (owner asked for them; Classic = the original look, kept as the default): `STYLES` in `app.js`
-(`settings.style`, `<html data-style>`), picked in the "Style" column of the palette menu (the menu has a
+App styles (owner asked for them): Classic (the original look), Ring (**default** — owner's pick), Neon and
+Target (id `halo`). Glass, Flat, Pixel, Sticker and Pearl were tried and removed by the owner; a saved
+removed style falls back to Ring (`applyStyle`), and `styleVersion` moved everyone to Ring once (`store.js`).
+`STYLES` in `app.js` (`settings.style`, `<html data-style>`), picked in the "Style" column of the palette menu (the menu has a
 "Colours" column and a "Style" column — stacked and scrollable on phones; each style item has a drawn
 preview, `stylePreview`). Style is independent of the colour theme: a style only changes shapes,
 fills, rings, glows and shadows, and takes every colour from the theme. Classic has no rules; each other
 style is a `:root[data-style='id']` block at the end of `style.css` covering note dots (fretboard + chord
 diagram `.cb-dot`, which carries `--dot`), active tabs, pills, primary buttons, segmented buttons,
 switches and metronome beat lights. Ring/Neon/Target use `--ring-fill` (a fixed near-black) for dots.
-Shape-level differences live in `fretboard.js`: `FS.dotShape()` draws a rounded square for Pixel
-(also used by `chords.js`); every non-faint note gets a `.halo` ring (shown only on the root, or on all
-notes in Target, which also shrinks the dot to 0.78 r so rings on neighbouring strings don't touch);
-Pearl adds a `.sheen` overlay (per-instance radial gradient). A style change emits `fretboard` to redraw.
+In `fretboard.js` every non-faint note gets a `.halo` ring (shown only on the root, or on all notes in
+Target, which also shrinks the dot to 0.78 r so rings on neighbouring strings don't touch). A style
+change emits `fretboard` to redraw. Theme-colour tests read the dot's `stroke` (Ring's fill is dark).
 Adding a style: `STYLES` + `stylePreview` case + CSS block + the smoke test's style list.
 
 ### Music-theory conventions

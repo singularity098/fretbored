@@ -717,19 +717,17 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 }
 .fretboard .note .halo { display: none; fill: none; stroke: var(--dot); stroke-width: 2; opacity: 0.55; }
 .fretboard .note.root .halo { display: inline; }
-.fretboard .note .sheen { pointer-events: none; }
 .fretboard .note.faint .dot { opacity: 0.28; stroke: none; }
 .fretboard .note.faint text { fill: #fff; opacity: 0.6; }
 .fretboard.wood-maple .note.faint .dot { opacity: 0.4; }
 .fretboard.wood-maple .note.faint text { fill: #1a1410; }
 .fretboard .note.enter { animation: dotIn 0.22s ease-out; transform-box: fill-box; }
-.fretboard .note.enter :is(.dot, .sheen) { animation: dotScale 0.22s ease-out; transform-origin: center; transform-box: fill-box; }
+.fretboard .note.enter .dot { animation: dotScale 0.22s ease-out; transform-origin: center; transform-box: fill-box; }
 @keyframes dotIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes dotScale { from { transform: scale(0.4); } to { transform: scale(1); } }
 .fretboard .note.playing-a .dot, .fretboard .note.playing-b .dot { transform-box: fill-box; transform-origin: center; stroke: #fff; stroke-width: 3; }
-.fretboard .note.playing-a :is(.dot, .sheen) { animation: ping 0.32s ease-out; }
-.fretboard .note.playing-b :is(.dot, .sheen) { animation: ping2 0.32s ease-out; }
-.fretboard .note:is(.playing-a, .playing-b) .sheen { transform-box: fill-box; transform-origin: center; }
+.fretboard .note.playing-a .dot { animation: ping 0.32s ease-out; }
+.fretboard .note.playing-b .dot { animation: ping2 0.32s ease-out; }
 @keyframes ping2 { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 @keyframes ping { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }
 
@@ -1132,8 +1130,7 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
 /* ================================================================ App styles
  * The look of note dots, buttons and tabs, chosen in the palette menu next to the colour theme
  * (FS.STYLES in app.js). Classic (the original look) is the rules above; each style below only
- * overrides them and takes every colour from the theme. Pixel's square dots and Target's dot
- * sizes are drawn by fretboard.js. */
+ * overrides them and takes every colour from the theme. Target's dot sizes are set in fretboard.js. */
 
 :root { --ring-fill: #0e1014; } /* dark dot fill for the ring styles, on every theme and wood */
 
@@ -1184,73 +1181,6 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
 :root[data-style='halo'] .switch input:checked + .slider { background: var(--accent); box-shadow: inset 0 0 0 2px var(--bg); }
 :root[data-style='halo'] .beat-dot.on span { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
 :root[data-style='halo'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent-2); }
-
-/* ---- Glass: see-through tinted dots and buttons */
-:root[data-style='glass'] :is(.fretboard .note .dot, .cb-dot) { fill: color-mix(in srgb, var(--dot) 32%, var(--ring-fill)); fill-opacity: 0.85; stroke: var(--dot); stroke-width: 1.8; }
-:root[data-style='glass'] .fretboard .note text { fill: color-mix(in srgb, var(--dot) 40%, white); }
-:root[data-style='glass'] .fretboard.wood-maple .note text { fill: color-mix(in srgb, var(--dot) 60%, black); }
-:root[data-style='glass'] .fretboard.wood-maple .note .dot { fill: color-mix(in srgb, var(--dot) 30%, white); }
-:root[data-style='glass'] .fretboard .note.faint .dot { opacity: 0.5; stroke-width: 1; }
-:root[data-style='glass'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary) {
-  background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent-text); border-color: transparent;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 65%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-:root[data-style='glass'] .seg button.active { background: color-mix(in srgb, var(--accent-2) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-2) 55%, transparent); }
-:root[data-style='glass'] .switch input:checked + .slider { background: color-mix(in srgb, var(--accent) 30%, transparent); box-shadow: inset 0 0 0 1px var(--accent); }
-:root[data-style='glass'] .beat-dot.on span { background: color-mix(in srgb, var(--accent) 35%, transparent); color: var(--text); border-color: var(--accent); box-shadow: none; }
-:root[data-style='glass'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { background: color-mix(in srgb, var(--accent-2) 30%, transparent); border-color: var(--accent-2); }
-
-/* ---- Flat: solid colours, no gradients, glows or shadows, tighter corners, underlined tabs */
-:root[data-style='flat'] { --radius: 8px; --radius-sm: 6px; --shadow: none; }
-:root[data-style='flat'] .fretboard .note .dot { stroke: none; }
-:root[data-style='flat'] .fretboard .note.root .halo { display: none; }
-:root[data-style='flat'] .fretboard .board { filter: none; }
-:root[data-style='flat'] .card { background: var(--surface); }
-:root[data-style='flat'] :is(.pill.active, .btn.primary, .switch input:checked + .slider, .progress-bar, .tr-goal-bar, .sweep-ball) { background: var(--accent); box-shadow: none; }
-:root[data-style='flat'] :is(.btn, .pill, .seg, .icon-btn, select, input[type='text'], input[type='number']) { border-radius: 6px; }
-:root[data-style='flat'] .seg button { border-radius: 4px; }
-:root[data-style='flat'] .tabs { background: transparent; border: 0; border-radius: 0; padding: 0; gap: 0; }
-:root[data-style='flat'] .tabs button { border-radius: 0; box-shadow: inset 0 -2px 0 var(--border); }
-:root[data-style='flat'] .tabs button[aria-selected='true'] { background: transparent; color: var(--accent-text); box-shadow: inset 0 -3px 0 var(--accent); }
-:root[data-style='flat'] .beat-dot.on span { box-shadow: none; }
-
-/* ---- Pixel: square notes, hard edges and hard offset shadows */
-:root[data-style='pixel'] { --radius: 4px; --radius-sm: 3px; }
-:root[data-style='pixel'] :is(.fretboard .note .dot, .cb-dot) { stroke: var(--ring-fill); stroke-width: 2; }
-:root[data-style='pixel'] .fretboard .note text { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-:root[data-style='pixel'] .fretboard .note.root .halo { opacity: 0.85; }
-:root[data-style='pixel'] :is(.btn, .pill, .seg, .seg button, .tabs, .tabs button, .icon-btn, .chip, .chord-cell, .tr-answer, select, input[type='text'], input[type='number'], .beat-dot span, .switch .slider, .switch .slider::after) { border-radius: 2px; }
-:root[data-style='pixel'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary) {
-  background: var(--accent); color: var(--on-accent); border-color: transparent;
-  box-shadow: 3px 3px 0 color-mix(in srgb, var(--accent) 40%, black);
-}
-:root[data-style='pixel'] .switch input:checked + .slider { background: var(--accent); }
-:root[data-style='pixel'] .beat-dot.on span { box-shadow: 3px 3px 0 color-mix(in srgb, var(--accent) 40%, black); }
-:root[data-style='pixel'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { box-shadow: 3px 3px 0 color-mix(in srgb, var(--accent-2) 40%, black); }
-
-/* ---- Sticker: die-cut white outlines with a drop shadow */
-:root[data-style='sticker'] :is(.fretboard .note .dot, .cb-dot) { stroke: #fff; stroke-width: 2.5; filter: drop-shadow(1.5px 2px 0 rgba(0, 0, 0, 0.55)); }
-:root[data-style='sticker'] :is(.fretboard .note.root .dot, .cb-dot.root) { stroke-width: 3.5; }
-:root[data-style='sticker'] .fretboard .note.root .halo { display: none; }
-:root[data-style='sticker'] .fretboard .note.faint .dot { filter: none; stroke-width: 1.5; }
-:root[data-style='sticker'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary) {
-  background: var(--accent); color: var(--on-accent); border-color: transparent;
-  box-shadow: inset 0 0 0 2px var(--text), 2px 3px 0 rgba(0, 0, 0, 0.5);
-}
-:root[data-style='sticker'] .switch input:checked + .slider { background: var(--accent); box-shadow: inset 0 0 0 2px var(--text); }
-:root[data-style='sticker'] .beat-dot.on span { border-color: var(--text); box-shadow: 2px 3px 0 rgba(0, 0, 0, 0.5); }
-
-/* ---- Pearl: glossy dots like shell inlays; glossy buttons */
-:root[data-style='pearl'] :is(.fretboard .note .dot, .cb-dot) { stroke: color-mix(in srgb, var(--dot) 55%, black); stroke-width: 1; }
-:root[data-style='pearl'] .fretboard .note.root .halo { opacity: 0.7; }
-:root[data-style='pearl'] :is(.tabs button[aria-selected='true'], .pill.active, .btn.primary, .switch input:checked + .slider) {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 62%, white), var(--accent) 55%, color-mix(in srgb, var(--accent) 80%, black));
-  color: var(--on-accent); border-color: transparent;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.3);
-}
-:root[data-style='pearl'] .seg button.active { background: linear-gradient(180deg, color-mix(in srgb, var(--surface-3) 70%, white 12%), var(--surface-3)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 3px rgba(0, 0, 0, 0.3); }
-:root[data-style='pearl'] .beat-dot.on span { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 45%, white), var(--accent) 60%); }
-:root[data-style='pearl'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent-2) 45%, white), var(--accent-2) 60%); }
 
 /* Phones: no glows on the metronome lights (repaints can starve audio — see CLAUDE.md). */
 @media (max-width: 760px) {

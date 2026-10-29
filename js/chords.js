@@ -326,7 +326,7 @@
           const pc = t.mod12(tuning[s] + f);
           const root = !unknown && pc === st.root;
           const fill = root ? 'var(--dot-root)' : 'var(--dot-note)';
-          p.push(FS.dotShape(`cb-dot${root ? ' root' : ''}`, sw * 0.38, x, topY + row * fh + fh / 2, `style="--dot:${fill}"`));
+          p.push(`<circle class="cb-dot${root ? ' root' : ''}" cx="${x}" cy="${topY + row * fh + fh / 2}" r="${sw * 0.38}" style="--dot:${fill}"/>`);
         }
       });
       p.push('</svg>');

@@ -7,7 +7,8 @@
   const DEFAULTS = {
     tab: 'scales',
     theme: 'dark',
-    style: 'classic', // look of note dots, buttons and tabs (FS.STYLES in app.js)
+    style: 'ring', // look of note dots, buttons and tabs (FS.STYLES in app.js)
+    styleVersion: 0, // bumped to migrate the saved style once
     fretboard: {
       strings: 6,
       tuning: 'std6',
@@ -83,6 +84,11 @@
     saved = null;
   }
   FS.settings = merge(DEFAULTS, saved);
+  // Style v1: Ring became the default; switch everyone over once (Classic stays one tap away).
+  if (FS.settings.styleVersion < 1) {
+    FS.settings.style = 'ring';
+    FS.settings.styleVersion = 1;
+  }
   // Trainer v1: the default practice area is Open–12; reset ranges saved before that existed.
   if (FS.settings.trainer.version < 1) {
     FS.settings.trainer.from = 0;
