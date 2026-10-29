@@ -21,21 +21,82 @@
   ];
   FS.THEMES = THEMES;
 
+  // App styles: the look of note dots, buttons and tabs, independent of the colour theme (the rules
+  // live in style.css as :root[data-style=…]; Classic is the original look and has none).
+  const STYLES = [
+    { id: 'classic', name: 'Classic' },
+    { id: 'ring', name: 'Ring' },
+    { id: 'neon', name: 'Neon' },
+    { id: 'halo', name: 'Target' },
+    { id: 'glass', name: 'Glass' },
+    { id: 'flat', name: 'Flat' },
+    { id: 'pixel', name: 'Pixel' },
+    { id: 'sticker', name: 'Sticker' },
+    { id: 'pearl', name: 'Pearl' },
+  ];
+  FS.STYLES = STYLES;
+
+  // Menu preview: a root dot and a note dot drawn the way the style draws them on the fretboard.
+  function stylePreview(id) {
+    const dot = (cx, c) => {
+      const ring = '#0e1014';
+      switch (id) {
+        case 'ring': return `<circle cx="${cx}" cy="10" r="7" style="fill:${ring};stroke:${c};stroke-width:2.2"/>`;
+        case 'neon': return `<circle cx="${cx}" cy="10" r="7" style="fill:${ring};stroke:${c};stroke-width:1.8;filter:drop-shadow(0 0 2.5px ${c})"/>`;
+        case 'halo': return `<circle cx="${cx}" cy="10" r="8.5" style="fill:none;stroke:${c};stroke-width:1.4"/><circle cx="${cx}" cy="10" r="5.5" style="fill:${c}"/>`;
+        case 'glass': return `<circle cx="${cx}" cy="10" r="7" style="fill:color-mix(in srgb, ${c} 32%, #0e1014);stroke:${c};stroke-width:1.6"/>`;
+        case 'flat': return `<circle cx="${cx}" cy="10" r="7.5" style="fill:${c}"/>`;
+        case 'pixel': return `<rect x="${cx - 7}" y="3" width="14" height="14" rx="1.5" style="fill:${c};stroke:#0e1014;stroke-width:1.5"/>`;
+        case 'sticker': return `<circle cx="${cx}" cy="10" r="7" style="fill:${c};stroke:#fff;stroke-width:2;filter:drop-shadow(1px 1.5px 0 rgba(0,0,0,.55))"/>`;
+        case 'pearl': return `<circle cx="${cx}" cy="10" r="7.5" style="fill:${c}"/><circle cx="${cx}" cy="10" r="7.5" fill="url(#pv-sheen)"/>`;
+        default: return `<circle cx="${cx}" cy="10" r="7" style="fill:${c};stroke:rgba(0,0,0,.35)"/>`;
+      }
+    };
+    const span = document.createElement('span');
+    span.className = 'style-swatch';
+    span.setAttribute('aria-hidden', 'true');
+    span.innerHTML = `<svg viewBox="0 0 40 20" width="40" height="20">${dot(10, 'var(--dot-root)')}${dot(29, 'var(--dot-note)')}</svg>`;
+    return span;
+  }
+
+  function applyStyle() {
+    const style = STYLES.find((x) => x.id === FS.settings.style) || STYLES[0];
+    FS.settings.style = style.id;
+    document.documentElement.dataset.style = style.id;
+    document.querySelectorAll('#theme-menu [data-style]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.style === style.id)));
+  }
+
   function applyTheme() {
     const theme = THEMES.find((x) => x.id === FS.settings.theme) || THEMES[0];
     FS.settings.theme = theme.id;
     document.documentElement.dataset.theme = theme.id;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.content = theme.sw[0];
-    document.querySelectorAll('#theme-menu [role="menuitemradio"]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.id === theme.id)));
+    document.querySelectorAll('#theme-menu [data-id]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.id === theme.id)));
   }
 
-  // Header palette button → menu of themes.
+  // Header palette button → menu of colour themes and styles, side by side (stacked on phones).
   function setupThemeMenu() {
     const btn = document.getElementById('theme-btn');
     const menu = document.getElementById('theme-menu');
+    const colours = FS.h('div', { class: 'menu-group', role: 'group', 'aria-label': 'Colours' }, FS.h('div', { class: 'menu-head', 'aria-hidden': 'true' }, 'Colours'));
+    const styles = FS.h('div', { class: 'menu-group', role: 'group', 'aria-label': 'Style' }, FS.h('div', { class: 'menu-head', 'aria-hidden': 'true' }, 'Style'));
+    menu.append(colours, styles);
+    // Shared sheen for the Pearl preview (one copy: SVG ids are page-wide).
+    menu.insertAdjacentHTML('beforeend', '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="pv-sheen" cx="0.32" cy="0.25" r="0.6"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs></svg>');
+    for (const style of STYLES) {
+      styles.append(FS.h('button', {
+        role: 'menuitemradio', class: 'theme-item', dataset: { style: style.id },
+        onclick: () => {
+          FS.settings.style = style.id;
+          FS.save();
+          applyStyle();
+          FS.emit('fretboard');
+        },
+      }, stylePreview(style.id), style.name));
+    }
     for (const theme of THEMES) {
-      menu.append(FS.h('button', {
+      colours.append(FS.h('button', {
         role: 'menuitemradio', class: 'theme-item', dataset: { id: theme.id },
         onclick: () => {
           FS.settings.theme = theme.id;
@@ -46,6 +107,7 @@
       }, FS.h('span', { class: 'theme-swatch', 'aria-hidden': 'true', style: `--sw-bg:${theme.sw[0]};--sw-card:${theme.sw[1]};--sw-accent:${theme.sw[2]}` }), theme.name));
     }
     applyTheme();
+    applyStyle();
     popupMenu(btn, menu, () => menu.querySelector('[aria-checked="true"]'));
   }
 
@@ -294,6 +356,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     applyTheme();
+    applyStyle();
     setupPwa();
     setupSwipe();
 

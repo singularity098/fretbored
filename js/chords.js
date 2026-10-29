@@ -324,8 +324,9 @@
           const row = f - start;
           if (row < 0 || row >= rows) return;
           const pc = t.mod12(tuning[s] + f);
-          const fill = !unknown && pc === st.root ? 'var(--dot-root)' : 'var(--dot-note)';
-          p.push(`<circle cx="${x}" cy="${topY + row * fh + fh / 2}" r="${sw * 0.38}" style="fill:${fill}"/>`);
+          const root = !unknown && pc === st.root;
+          const fill = root ? 'var(--dot-root)' : 'var(--dot-note)';
+          p.push(FS.dotShape(`cb-dot${root ? ' root' : ''}`, sw * 0.38, x, topY + row * fh + fh / 2, `style="--dot:${fill}"`));
         }
       });
       p.push('</svg>');

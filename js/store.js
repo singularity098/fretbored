@@ -7,6 +7,7 @@
   const DEFAULTS = {
     tab: 'scales',
     theme: 'dark',
+    style: 'classic', // look of note dots, buttons and tabs (FS.STYLES in app.js)
     fretboard: {
       strings: 6,
       tuning: 'std6',

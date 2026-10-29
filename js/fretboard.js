@@ -10,7 +10,19 @@
   ];
 
   // Note dot colours come from the app colour theme: --dot-root / --dot-note (+ -ink for the
-  // label) are set per theme in style.css.
+  // label) are set per theme in style.css. Their look (ring, glow, square…) comes from the app
+  // style (FS.STYLES in app.js, :root[data-style] rules in style.css).
+
+  // A note dot centred on (cx, cy): a circle, or a rounded square in the Pixel style.
+  FS.dotShape = function (cls, rad, cx, cy, attrs) {
+    const a = attrs ? ` ${attrs}` : '';
+    if (FS.settings.style === 'pixel') {
+      const x = (cx || 0) - rad;
+      const y = (cy || 0) - rad;
+      return `<rect class="${cls}" x="${x}" y="${y}" width="${2 * rad}" height="${2 * rad}" rx="${(rad * 0.22).toFixed(1)}"${a}/>`;
+    }
+    return `<circle class="${cls}"${cx ? ` cx="${cx}" cy="${cy}"` : ''} r="${rad}"${a}/>`;
+  };
 
   const INLAYS = [3, 5, 7, 9, 15, 17, 19, 21];
   const DOUBLE_INLAYS = [12, 24];
@@ -149,6 +161,9 @@
         <linearGradient id="${this.uid}string" ${g2}>
           <stop offset="0" stop-color="#f4f1ea"/><stop offset="1" stop-color="#8d8a84"/>
         </linearGradient>
+        <radialGradient id="${this.uid}sheen" cx="0.32" cy="0.25" r="0.6">
+          <stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.08"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
       </defs>`);
 
       // Board
@@ -223,6 +238,8 @@
       }
 
       // Notes
+      const pearl = FS.settings.style === 'pearl';
+      const target = FS.settings.style === 'halo';
       const keys = new Set();
       for (const note of this.model.notes) {
         const key = `${note.s}:${note.f}:${note.kind}`;
@@ -233,12 +250,16 @@
         let ink = note.kind === 'root' ? 'var(--dot-root-ink)' : 'var(--dot-note-ink)';
         if (note.color) (fill = note.color), (ink = '#0d1017');
         const label = FS.theory.pretty(note.label || '');
-        const fs = (label.length >= 4 ? 9 : label.length === 3 ? 10.5 : 12.5) * (r / 14);
+        const fs = (label.length >= 4 ? 9 : label.length === 3 ? 10.5 : 12.5) * (r / 14) * (target ? 0.86 : 1);
         const cls = `note ${note.kind}${enter}`;
         const midi = L.tuning[note.s] + note.f;
         parts.push(`<g class="${cls}" data-midi="${midi}" transform="translate(${c.x} ${c.y})" style="--dot:${fill};--dot-text:${ink}">`);
-        if (note.kind === 'root') parts.push(`<circle class="halo" r="${r + 4}"/>`);
-        parts.push(`<circle class="dot" r="${note.kind === 'faint' ? r * 0.82 : r}"/>`);
+        // The outer ring marks the root; the Target style shows it on every note, tight around a
+        // smaller dot so neighbouring strings' rings don't overlap.
+        if (note.kind !== 'faint') parts.push(FS.dotShape('halo', target ? r + 1 : r + 4));
+        const dr = note.kind === 'faint' ? r * 0.82 : target ? r * 0.78 : r;
+        parts.push(FS.dotShape('dot', dr));
+        if (pearl && note.kind !== 'faint') parts.push(FS.dotShape('sheen', dr, 0, 0, `fill="url(#${this.uid}sheen)"`));
         if (label) parts.push(`<text style="font-size:${fs.toFixed(1)}px">${label}</text>`);
         parts.push('</g>');
       }
