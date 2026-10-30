@@ -739,19 +739,18 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 .circle-svg { width: 100%; max-width: 600px; height: auto; display: block; }
 .cof-seg { cursor: pointer; outline: none; }
 .cof-seg path { transition: fill 0.35s ease, stroke 0.35s ease, opacity 0.35s; stroke: var(--bg); stroke-width: 1.5; }
-.cof-ring.major .cof-seg path { fill: var(--surface-3); }
-.cof-ring.minor .cof-seg path { fill: var(--surface-2); }
-.cof-ring.dim .cof-seg path { fill: color-mix(in srgb, var(--surface-2) 70%, var(--bg)); }
+.cof-ring.major .cof-seg:not(.on) path { fill: var(--surface-3); }
+.cof-ring.minor .cof-seg:not(.on) path { fill: var(--surface-2); }
+.cof-ring.dim .cof-seg:not(.on) path { fill: color-mix(in srgb, var(--surface-2) 70%, var(--bg)); }
 .cof-seg text { fill: var(--text-2); text-anchor: middle; dominant-baseline: central; font-weight: 750; pointer-events: none; transition: fill 0.3s; }
-.cof-seg .cof-num { font-size: 11px; font-weight: 700; fill: rgba(255, 255, 255, 0.85); }
+.cof-seg .cof-num { font-size: 11px; font-weight: 700; opacity: 0.85; }
 .cof-ring.dim .cof-seg .cof-num { display: none; }
 .cof-seg:hover path, .cof-seg:focus-visible path { filter: brightness(1.25); }
-.cof-ring.major .cof-seg.on path { fill: color-mix(in srgb, var(--accent-2) 70%, var(--surface-3)); }
-.cof-ring.minor .cof-seg.on path { fill: color-mix(in srgb, var(--accent-2) 52%, var(--surface-2)); }
-.cof-ring.dim .cof-seg.on path { fill: color-mix(in srgb, var(--accent-2) 42%, var(--surface-2)); }
-.cof-seg.on text { fill: #fff; }
-.cof-seg.tonic path { fill: var(--accent) !important; filter: url(#cofglow); }
-.cof-seg.tonic text { fill: #fff; }
+/* Diatonic segments wear the app theme's note-dot colours: the tonic in the root colour, the rest in the note colour. */
+.cof-seg.on path { fill: var(--dot-note); }
+.cof-seg.on text { fill: var(--dot-note-ink); }
+.cof-seg.tonic path { fill: var(--dot-root); filter: url(#cofglow); }
+.cof-seg.tonic text { fill: var(--dot-root-ink); }
 .cof-sig text { fill: var(--text-3); font-size: 11px; font-weight: 700; text-anchor: middle; dominant-baseline: central; transition: fill 0.3s; }
 .cof-sig text.on { fill: var(--accent-text); }
 .cof-center circle { stroke: var(--border-strong); }
@@ -901,16 +900,16 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* ---------------------------------------------------------------- Now-viewing bar */
 
+/* Pinned to the bottom of the screen on every tab with a play button, so it is always in the same place. */
 .now-bar {
-  position: fixed; left: 0; right: 0; top: var(--topbar-h, 64px); z-index: 15;
-  padding: 8px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left));
-  pointer-events: none; opacity: 0; transform: translateY(-8px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 15;
+  padding: 0 max(16px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(8px);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
 }
-.now-bar.show { opacity: 1; transform: none; }
-.now-bar.at-bottom { top: auto; bottom: 0; padding-top: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); transform: translateY(8px); }
-.now-bar.at-bottom.show { transform: none; }
+.now-bar.show { opacity: 1; visibility: visible; transform: none; }
 .now-bar.show .nb-inner { pointer-events: auto; }
+body.has-now-bar { padding-bottom: calc(var(--nowbar-h, 64px) + 8px); } /* the page's end scrolls clear of the bar */
 .nb-inner {
   max-width: 1280px; margin: 0 auto; display: flex; align-items: center; gap: 10px;
   background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 14px;
@@ -1165,6 +1164,11 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
 :root[data-style='ring'] .switch input:checked + .slider::after { top: 2px; left: 2px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
 :root[data-style='ring'] .beat-dot.on span { background: var(--bg); color: var(--accent-text); border-color: var(--accent); border-width: 3px; box-shadow: none; }
 :root[data-style='ring'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { background: var(--bg); color: var(--text); border-color: var(--accent-2); }
+/* Circle of fifths: diatonic segments are dark like the dots, each with a ring in its colour. */
+:root[data-style='ring'] .cof-seg.on path { fill: var(--ring-fill); stroke: var(--dot-note); stroke-width: 2.5; }
+:root[data-style='ring'] .cof-seg.on text { fill: color-mix(in srgb, var(--dot-note) 80%, white); }
+:root[data-style='ring'] .cof-seg.tonic path { fill: var(--ring-fill); stroke: var(--dot-root); stroke-width: 3.5; filter: none; }
+:root[data-style='ring'] .cof-seg.tonic text { fill: color-mix(in srgb, var(--dot-root) 80%, white); }
 
 /* ---- Target: a solid dot inside a ring of its colour; gradient buttons with a double ring
  * (the gap between the rings is the masked ::after above, filled with the page colour). */

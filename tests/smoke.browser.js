@@ -413,7 +413,21 @@ const check = (label, actual, expected) => {
     await page.click('#panel-circle .cof-ring.major .cof-seg:nth-child(2)');
     await page.waitForTimeout(100);
     check(`${P} circle: outer ring → major`, `${await page.textContent('#panel-circle .hero-title')} on ${await tonicRing()}`, 'G Ionian (Major) on major');
+    check(`${P} circle: diatonic segments in the Ring style`, await page.$eval('#panel-circle .cof-seg.on:not(.tonic) path', (p) => getComputedStyle(p).fill), 'rgb(14, 16, 20)');
+    // The now-viewing bar is pinned to the bottom of the screen, whatever the scroll position.
+    const barAtBottom = () => page.evaluate(() => {
+      const b = document.querySelector('.now-bar.show');
+      return !!b && Math.round(b.getBoundingClientRect().bottom) === innerHeight;
+    });
+    check(`${P} circle: play bar pinned to the bottom`, String(await barAtBottom()), 'true');
+    await page.evaluate(() => window.scrollTo(0, 300));
+    await page.waitForTimeout(100);
+    check(`${P} circle: play bar stays put when scrolled`, String(await barAtBottom()), 'true');
+    check(`${P} circle: play bar plays the scale`, await page.textContent('.now-bar.show .nb-action'), '▶ Play scale');
     await shot('circle');
+    await page.click('#tab-trainer');
+    await page.waitForTimeout(250);
+    check(`${P} trainer: no play bar`, String(await page.$$eval('.now-bar.show', (b) => b.length)), '0');
 
     // Trainer: name mode scoring, fret range, strings, naturals, find mode, saved progress.
     await page.click('#tab-trainer');

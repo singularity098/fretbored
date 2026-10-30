@@ -1,31 +1,27 @@
-/* Fretbored — "now viewing" bar that pins the current scale/chord under the top bar while scrolling. */
+/* Fretbored — "now viewing" bar: the current scale/chord/key with its play button, pinned to the bottom of the screen on every tab that has one. */
 (function () {
   'use strict';
   const FS = (window.FS = window.FS || {});
   const h = (...a) => FS.h(...a);
 
-  // Keep --topbar-h in sync so fixed elements can sit just below the (sticky) top bar.
-  function trackTopbar() {
-    const bar = document.querySelector('.topbar');
-    if (!bar || trackTopbar.done) return;
-    trackTopbar.done = true;
-    const set = () => document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`);
-    set();
-    new ResizeObserver(set).observe(bar);
+  // Keep the page's end clear of the visible bar (see body.has-now-bar in style.css).
+  function syncBody() {
+    const shown = document.querySelector('.now-bar.show');
+    document.body.classList.toggle('has-now-bar', !!shown);
+    if (shown) document.documentElement.style.setProperty('--nowbar-h', `${shown.offsetHeight}px`);
   }
 
   /**
-   * panel: the tab panel; watchEl: the title element — the bar shows while it is out of view (scrolled above the top bar, or still below the screen);
+   * panel: the tab panel; watchEl: the title element, used by the arrow that jumps back to it;
    * onAction: handler for the bar's play button.
    * Returns { set({ accent, rest, notes, action }) }.
    */
   FS.createNowBar = function (panel, watchEl, onAction) {
-    trackTopbar();
     const accent = h('span', { class: 'accent-text' });
     const rest = h('span');
     const notes = h('div', { class: 'nb-notes' });
     const action = h('button', { class: 'btn primary small nb-action', onclick: onAction });
-    // Jumps to the title and its controls, wherever they are (↑ above, ↓ below).
+    // Jumps to the title and its controls, wherever they are (↑ above, ↓ below); hidden while they are on screen.
     const up = h('button', {
       class: 'icon-btn nb-up',
       title: 'Go to the controls',
@@ -35,24 +31,25 @@
         window.scrollTo({ top: Math.max(0, window.scrollY + watchEl.getBoundingClientRect().top - topbar - 12), behavior: 'smooth' });
       },
     }, '↑');
-    const bar = h('div', { class: 'now-bar', 'aria-hidden': 'true' },
+    const bar = h('div', { class: 'now-bar', 'aria-hidden': 'true', 'data-noswipe': '' },
       h('div', { class: 'nb-inner' }, h('div', { class: 'nb-text' }, h('div', { class: 'nb-title' }, accent, rest), notes), action, up)
     );
     document.body.append(bar);
+    new ResizeObserver(syncBody).observe(bar);
 
     let queued = false;
     function check() {
       queued = false;
       const top = document.querySelector('.topbar').getBoundingClientRect().bottom;
       const r = watchEl.getBoundingClientRect();
-      // The title can be out of view above (scrolled past) or below (the fretboard comes first).
       const below = r.top > window.innerHeight - 40;
-      const show = !panel.hidden && (r.bottom < top || below);
+      const above = r.bottom < top;
+      up.hidden = !(above || below);
       up.textContent = below ? '↓' : '↑';
-      // Title below the screen (fretboard first): sit at the bottom so the top of the tab stays usable.
-      if (show) bar.classList.toggle('at-bottom', below);
+      const show = !panel.hidden;
       bar.classList.toggle('show', show);
       bar.setAttribute('aria-hidden', String(!show));
+      syncBody();
     }
     const queue = () => {
       if (!queued) {

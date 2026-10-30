@@ -151,6 +151,8 @@
       )
     );
 
+    const nowBar = FS.createNowBar(panel, panel.querySelector('.info-card .hero-head'), () => playScale());
+
     function set(tonic, mode) {
       st.tonic = tonic;
       st.mode = mode;
@@ -213,6 +215,13 @@
       cMode.textContent = md.mode.short;
       const parentName = t.spell(md.parent, t.SCALE_BY_ID.major.intervals, t.SCALE_BY_ID.major.labels).root;
       cSig.textContent = !SIG[p] ? 'no ♯ / ♭' : SIG[p].includes('/') ? SIG[p].split('/')[parentName.includes('b') ? 1 : 0] : SIG[p];
+
+      nowBar.set({
+        accent: t.pretty(md.sp.root),
+        rest: md.mode.name,
+        notes: md.sp.names.map(t.pretty).join('  ·  '),
+        action: '▶ Play scale',
+      });
 
       infoTitle.innerHTML = '';
       infoTitle.append(h('span', { class: 'accent-text' }, t.pretty(md.sp.root)), ' ', md.mode.name);
