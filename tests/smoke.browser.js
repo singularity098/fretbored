@@ -376,7 +376,7 @@ function settingsHelpers(page) {
     await shot('arpeggios');
 
     // Stop cuts the notes already queued on the audio clock, not just the highlighting: no note that
-    // would start after the press may still sound (checked on scales and on arpeggios).
+    // would start after the press may still sound (checked on scales).
     await page.evaluate(() => {
       const start = AudioBufferSourceNode.prototype.start;
       const stop = AudioBufferSourceNode.prototype.stop;
@@ -386,7 +386,7 @@ function settingsHelpers(page) {
       AudioBufferSourceNode.prototype.stop = function (w) { window.__stops.push([this, w]); return stop.apply(this, arguments); };
       document.addEventListener('pointerdown', () => (window.__pressAt = FS.audio.ctx().currentTime), true);
     });
-    for (const tab of ['scales', 'arpeggios']) { // ends on Arpeggios, where the tests below expect to be
+    for (const tab of ['scales']) {
       await page.click(`#tab-${tab}`);
       await page.waitForTimeout(200);
       await page.evaluate(() => { window.__starts = []; window.__stops = []; window.__pressAt = null; });
@@ -405,6 +405,28 @@ function settingsHelpers(page) {
       check(`${P} ${tab}: stop cuts the notes still queued`, `${queued > 0 ? 'queued' : 'none queued'}, ${sounding} still sound`, 'queued, 0 still sound');
       check(`${P} ${tab}: stop returns the button to Play`, (await page.textContent('.now-bar.show .nb-action')).trim(), /^▶ Play/);
     }
+
+    // Arpeggios have no Stop: Play stays labelled Play, and pressing it again cuts the notes still
+    // queued and starts the arpeggio over from its first note.
+    await page.click('#tab-arpeggios');
+    await page.waitForTimeout(200);
+    await page.evaluate(() => { window.__starts = []; window.__stops = []; window.__pressAt = null; });
+    await page.click('.now-bar.show .nb-action');
+    await page.waitForTimeout(900);
+    check(`${P} arpeggios: playing keeps the Play label`, (await page.textContent('.now-bar.show .nb-action')).trim(), '▶ Play');
+    const oldCount = await page.evaluate(() => { window.__pressAt = FS.audio.ctx().currentTime; return window.__starts.length; });
+    await page.click('.now-bar.show .nb-action'); // play again, halfway through
+    await page.waitForTimeout(150);
+    const restart = await page.evaluate((n) => {
+      const cut = window.__pressAt;
+      const old = window.__starts.slice(0, n).filter(([, w]) => w > cut + 0.1); // notes still to come
+      const cutOld = old.filter(([m, w]) => window.__stops.some(([k, t]) => k === m && t !== undefined && t <= w));
+      const fresh = window.__starts.slice(n).map(([, w]) => w - cut);
+      return { old: old.length, cutOld: cutOld.length, fresh: fresh.length, first: fresh.length ? Math.min(...fresh) : null };
+    }, oldCount);
+    check(`${P} arpeggios: play again restarts`, `${restart.fresh > 0 && restart.first < 0.2 ? 'restarted at once' : 'no restart'}`, 'restarted at once');
+    check(`${P} arpeggios: restart cuts the old notes`, restart.old === restart.cutOld ? (restart.old ? 'all cut' : 'none queued') : `${restart.old - restart.cutOld} left`, restart.old ? 'all cut' : 'queued');
+    await page.waitForTimeout(3000); // let it finish before the tests below
 
     // Vertical board (phones): Chords and Arpeggios crop to the shape, with a whole-neck toggle.
     if (name === 'phone') {
@@ -738,16 +760,16 @@ function settingsHelpers(page) {
       await page.click('#settings-dialog .seg[aria-label="Playback speed"] button:has-text("Shred")');
     });
     check('[arp-settings] Down plays top to bottom', await page.$$eval('#panel-arpeggios .tab-note text', (t) => t.map((x) => x.textContent).join(' ')), '3 0 1 0 2 3 3 0');
-    // Choosing another root while an arpeggio plays doesn't stop it; only Stop does.
+    // Choosing another root while an arpeggio plays doesn't stop it; Play starts it over.
     await page.click('.now-bar.show .nb-action');
     await page.waitForTimeout(200);
     await page.$eval('#panel-arpeggios .root-pills .pill[data-pc="7"]', (b) => b.scrollIntoView({ block: 'center' }));
     await page.click('#panel-arpeggios .root-pills .pill[data-pc="7"]');
     await page.waitForTimeout(100);
-    check('[arp-settings] changing root keeps playing', (await page.textContent('.now-bar.show .nb-action')).trim(), '■ Stop');
+    check('[arp-settings] changing root keeps playing', (await page.textContent('.now-bar.show .nb-action')).trim(), '▶ Play');
     await page.click('.now-bar.show .nb-action');
     await page.waitForTimeout(100);
-    check('[arp-settings] stop button ends it', (await page.textContent('.now-bar.show .nb-action')).trim(), '▶ Play');
+    check('[arp-settings] play again starts over', (await page.textContent('.now-bar.show .nb-action')).trim(), '▶ Play');
     await page.reload(); // immediately — before the batched save would have run
     await page.waitForTimeout(400);
     check('[arp-settings] speed and direction kept', await page.evaluate(() => `${FS.settings.arpeggios.speed} ${FS.settings.arpeggios.order}`), 'shred down');

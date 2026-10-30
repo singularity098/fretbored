@@ -93,7 +93,7 @@
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Direction'), orderSeg),
       h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Speed'), speedSeg)
     );
-    const nowBar = FS.createNowBar(panel, panel.querySelector('.arp-hero'), () => (playing ? stopPlaying() : play()));
+    const nowBar = FS.createNowBar(panel, panel.querySelector('.arp-hero'), play);
 
     /* ---- Shapes ---- */
 
@@ -235,6 +235,7 @@
     function play() {
       const seq = sequence(currentShape());
       if (!seq.length) return;
+      stopPlaying(); // pressing Play again starts over from the first note
       const step = (SPEEDS.find((x) => x[0] === st.speed) || SPEEDS[1])[2];
       FS.audio.prepare(seq.map((x) => x.midi + bump()));
       const ctx = FS.audio.ctx();
@@ -252,8 +253,6 @@
       });
       timers.push(setTimeout(stopPlaying, (seq.length * step + 0.8) * 1000));
       playing = { timers, notes };
-      renderControls();
-      renderNowBar();
     }
 
     function stopPlaying() {
@@ -262,17 +261,15 @@
       playing.notes.forEach(FS.audio.stopNote); // the notes are already queued: cut them too
       playing = null;
       highlightTab(-1);
-      renderControls();
-      renderNowBar();
     }
 
     /* ---- Rendering ---- */
 
-    // The pinned bar's text is set by render(); its Play/Stop label also changes on play and stop.
+    // The pinned bar's text is set by render(); its Play button is always labelled Play.
     let bar = null;
     function renderNowBar() {
       if (!bar) return;
-      nowBar.set({ accent: bar.accent, rest: bar.rest, notes: bar.notes, action: bar.canPlay ? (playing ? '■ Stop' : '▶ Play') : '' });
+      nowBar.set({ accent: bar.accent, rest: bar.rest, notes: bar.notes, action: bar.canPlay ? '▶ Play' : '' });
     }
 
     function renderControls() {
@@ -448,7 +445,7 @@
     }).observe(tabHost);
 
     let tuningKey = FS.currentTuning().notes.join('.');
-    // Only the Stop button ends a playing arpeggio; a new tuning (different notes) does.
+    // A new tuning (different notes) ends a playing arpeggio; so does leaving the tab.
     FS.on('fretboard', () => {
       const k = FS.currentTuning().notes.join('.');
       if (k !== tuningKey) {
