@@ -41,7 +41,7 @@
     // Positions: the five CAGED box shapes. Sweep: sweep-picking shapes (6/5/4-string from a root, 3-string).
     const styleSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Arpeggio style' });
     for (const [v, label] of [['positions', 'Positions'], ['sweep', 'Sweep']]) {
-      styleSeg.append(h('button', { dataset: { v }, onclick: () => { if (st.style === v && !st.custom) return; stopPlaying(); st.style = v; st.position = 0; st.custom = null; unknown = false; scrollPending = true; FS.save(); render(); } }, label));
+      styleSeg.append(h('button', { dataset: { v }, onclick: () => { if (st.style === v && !st.custom) return; st.style = v; st.position = 0; st.custom = null; unknown = false; scrollPending = true; FS.save(); render(); } }, label));
     }
     const posPills = h('div', { class: 'pills', role: 'group', 'aria-label': 'Position' });
     const showAll = h('input', { type: 'checkbox', role: 'switch' });
@@ -49,7 +49,7 @@
 
     const orderSeg = h('div', { class: 'seg', role: 'group', 'aria-label': 'Direction' });
     for (const [v, label] of [['up', 'Up'], ['down', 'Down'], ['updown', 'Up & down']]) {
-      orderSeg.append(h('button', { dataset: { v }, onclick: () => { st.order = v; FS.save(); stopPlaying(); render(); } }, label));
+      orderSeg.append(h('button', { dataset: { v }, onclick: () => { st.order = v; FS.save(); render(); } }, label));
     }
     const speedSeg = h('div', { class: 'seg speed-seg', role: 'group', 'aria-label': 'Playback speed' });
     for (const [v, label, step] of SPEEDS) {
@@ -166,7 +166,6 @@
     /* ---- State changes ---- */
 
     function setArp(root, id) {
-      stopPlaying();
       st.root = root;
       st.chordId = id;
       st.position = 0;
@@ -180,7 +179,6 @@
 
     // Tap: add the note to the shape, or remove it if it's already there; then identify the arpeggio.
     function tapNote(s, f) {
-      stopPlaying();
       const midi = FS.currentTuning().notes[s] + f;
       const cur = currentShape();
       const list = cur ? cur.notes.map((x) => [x.s, x.f]) : [];
@@ -255,6 +253,7 @@
       timers.push(setTimeout(stopPlaying, (seq.length * step + 0.8) * 1000));
       playing = { timers, notes };
       renderControls();
+      renderNowBar();
     }
 
     function stopPlaying() {
@@ -264,9 +263,17 @@
       playing = null;
       highlightTab(-1);
       renderControls();
+      renderNowBar();
     }
 
     /* ---- Rendering ---- */
+
+    // The pinned bar's text is set by render(); its Play/Stop label also changes on play and stop.
+    let bar = null;
+    function renderNowBar() {
+      if (!bar) return;
+      nowBar.set({ accent: bar.accent, rest: bar.rest, notes: bar.notes, action: bar.canPlay ? (playing ? '■ Stop' : '▶ Play') : '' });
+    }
 
     function renderControls() {
       const sp = spelled();
@@ -296,7 +303,7 @@
           h('button', {
             class: 'pill' + (!st.custom && i === st.position ? ' active' : ''),
             title: `${x.name ? `${x.name} · ` : ''}${x.lo === 0 ? `open position (frets 0–${x.hi})` : `frets ${x.lo}–${x.hi}`}`,
-            onclick: () => { stopPlaying(); st.position = i; st.custom = null; unknown = false; scrollPending = true; FS.save(); render(); },
+            onclick: () => { st.position = i; st.custom = null; unknown = false; scrollPending = true; FS.save(); render(); },
           }, pillLabel(x, i))
         );
       });
@@ -332,12 +339,13 @@
         }
       }
 
-      nowBar.set({
+      bar = {
         accent: unknown ? '?' : t.pretty(sp.root + sp.chord.symbol),
         rest: unknown ? 'Unknown arpeggio' : suffix(sp.chord),
         notes: (unknown ? usedPcs.map((pc) => t.pretty(t.pcLabel(pc))) : sp.names.map(t.pretty)).join('  ·  ') + (shape ? `   —   ${shapeLabel(shape)}` : ''),
-        action: shape && !shape.empty ? (playing ? '■ Stop' : '▶ Play') : '',
-      });
+        canPlay: !!shape && !shape.empty,
+      };
+      renderNowBar();
 
       renderTab(shape);
       renderBoard();
@@ -440,10 +448,11 @@
     }).observe(tabHost);
 
     let tuningKey = FS.currentTuning().notes.join('.');
+    // Only the Stop button ends a playing arpeggio; a new tuning (different notes) does.
     FS.on('fretboard', () => {
-      stopPlaying();
       const k = FS.currentTuning().notes.join('.');
       if (k !== tuningKey) {
+        stopPlaying();
         // A custom shape means different notes in another tuning.
         tuningKey = k;
         st.custom = null;

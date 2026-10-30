@@ -392,6 +392,7 @@ function settingsHelpers(page) {
       await page.evaluate(() => { window.__starts = []; window.__stops = []; window.__pressAt = null; });
       await page.click('.now-bar.show .nb-action'); // play
       await page.waitForTimeout(900);
+      check(`${P} ${tab}: playing shows Stop`, (await page.textContent('.now-bar.show .nb-action')).trim(), '■ Stop');
       await page.evaluate(() => (window.__pressAt = null));
       await page.click('.now-bar.show .nb-action'); // stop, halfway through
       await page.waitForTimeout(150);
@@ -737,6 +738,16 @@ function settingsHelpers(page) {
       await page.click('#settings-dialog .seg[aria-label="Playback speed"] button:has-text("Shred")');
     });
     check('[arp-settings] Down plays top to bottom', await page.$$eval('#panel-arpeggios .tab-note text', (t) => t.map((x) => x.textContent).join(' ')), '3 0 1 0 2 3 3 0');
+    // Choosing another root while an arpeggio plays doesn't stop it; only Stop does.
+    await page.click('.now-bar.show .nb-action');
+    await page.waitForTimeout(200);
+    await page.$eval('#panel-arpeggios .root-pills .pill[data-pc="7"]', (b) => b.scrollIntoView({ block: 'center' }));
+    await page.click('#panel-arpeggios .root-pills .pill[data-pc="7"]');
+    await page.waitForTimeout(100);
+    check('[arp-settings] changing root keeps playing', (await page.textContent('.now-bar.show .nb-action')).trim(), '■ Stop');
+    await page.click('.now-bar.show .nb-action');
+    await page.waitForTimeout(100);
+    check('[arp-settings] stop button ends it', (await page.textContent('.now-bar.show .nb-action')).trim(), '▶ Play');
     await page.reload(); // immediately — before the batched save would have run
     await page.waitForTimeout(400);
     check('[arp-settings] speed and direction kept', await page.evaluate(() => `${FS.settings.arpeggios.speed} ${FS.settings.arpeggios.order}`), 'shred down');
