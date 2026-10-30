@@ -27,6 +27,7 @@ const FILES = [
   'js/metronome.js',
   'js/pitch.js',
   'js/tuner.js',
+  'js/settings.js',
   'js/app.js',
   'assets/icon.svg',
   'assets/icons/icon-192.png',

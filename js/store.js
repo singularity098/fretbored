@@ -20,7 +20,6 @@
       reverb: 'off', // off | room | hall
       delay: 'off', // off | slap | echo
       orientation: 'horizontal',
-      controlsOpen: false, // fretboard settings section expanded (shared by all tabs)
       lefty: false,
       wholeNeck: false, // vertical Chords/Arpeggios boards: whole neck instead of just the shape
       customTunings: [],

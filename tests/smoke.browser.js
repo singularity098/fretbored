@@ -59,6 +59,24 @@ const check = (label, actual, expected) => {
   if (!ok) failures.push(`${label}: expected ${expected}, got ${actual}`);
 };
 
+// Settings (gear in the header): one dialog holds the guitar settings and the tabs' moved options.
+function settingsHelpers(page) {
+  const openSettings = async () => {
+    await page.click('#settings-btn');
+    await page.waitForSelector('#settings-dialog[open]', { state: 'attached' });
+  };
+  const closeSettings = async () => {
+    await page.click('#settings-dialog .settings-head .icon-btn');
+    await page.waitForSelector('#settings-dialog:not([open])', { state: 'attached' });
+  };
+  const inSettings = async (fn) => {
+    await openSettings();
+    await fn();
+    await closeSettings();
+  };
+  return { openSettings, closeSettings, inSettings };
+}
+
 (async () => {
   const wav = path.join(os.tmpdir(), `fretbored-a2-plus8-${process.pid}.wav`);
   writeToneWav(wav, 110 * Math.pow(2, 8 / 1200));
@@ -70,6 +88,7 @@ const check = (label, actual, expected) => {
   for (const [name, viewport] of [['desktop', { width: 1366, height: 900 }], ['phone', { width: 390, height: 844 }]]) {
     const ctx = await browser.newContext({ viewport, hasTouch: name === 'phone', permissions: ['microphone'] });
     const page = await ctx.newPage();
+    const { openSettings, closeSettings, inSettings } = settingsHelpers(page);
     page.on('pageerror', (e) => failures.push(`[${name}] page error: ${e.message}`));
     page.on('console', (m) => m.type() === 'error' && failures.push(`[${name}] console error: ${m.text()}`));
     const shot = async (n) => shots && page.screenshot({ path: path.join(shots, `${name}-${n}.png`), fullPage: true });
@@ -103,7 +122,7 @@ const check = (label, actual, expected) => {
     // Ring style that colour is the ring (stroke).
     const rootFill = () => page.$eval('#panel-scales .fretboard .note.root .dot', (c) => getComputedStyle(c).stroke);
     check(`${P} dark theme root dot colour`, await rootFill(), 'rgb(255, 122, 89)');
-    check(`${P} no dot-colour picker`, String(await page.$$eval('.fb-settings .swatch', (s) => s.length)), '0');
+    check(`${P} no dot-colour picker`, String(await page.$$eval('#settings-dialog .swatch', (s) => s.length)), '0');
     await page.click('#theme-btn');
     await page.click('#theme-menu [data-id="dracula"]');
     await page.waitForTimeout(300);
@@ -144,25 +163,21 @@ const check = (label, actual, expected) => {
     await page.waitForTimeout(300);
     check(`${P} removed style falls back to ring`, await page.$eval('html', (e) => e.dataset.style), 'ring');
 
-    // Guitar settings: folded by default; opening it on one tab opens it on the others and is remembered.
-    const fbOpen = (tab) => page.$eval(`#panel-${tab} .fb-settings`, (d) => d.open);
-    check(`${P} fretboard settings folded by default`, String(await fbOpen('scales')), 'false');
-    check(`${P} fretboard settings header shows tuning`, (await page.textContent('#panel-scales .fb-settings-tuning')).trim(), 'Standard · E A D G B E');
-    await page.click('#panel-scales .fb-settings summary');
-    await page.click('#tab-chords');
-    await page.waitForTimeout(200);
-    check(`${P} opening settings on Scales opens them on Chords`, String(await fbOpen('chords')), 'true');
-    await page.click('#panel-chords .fb-settings summary');
-    await page.click('#tab-scales');
-    await page.waitForTimeout(200);
-    check(`${P} closing on Chords closes on Scales`, String(await fbOpen('scales')), 'false');
+    // Settings: the guitar settings left the tabs and live in the gear's dialog (built from every tab).
+    check(`${P} no guitar settings on the tabs`, String(await page.$$eval('.panel .seg[aria-label="Guitar tone"]', (x) => x.length)), '0');
+    await openSettings();
+    check(`${P} settings sections`, await page.$$eval('#settings-dialog .settings-section h3', (h) => h.map((x) => x.textContent).join(' | ')), 'Guitar | Arpeggios | Trainer | Metronome sound | Backup');
+    check(`${P} settings: tuning shown`, (await page.$eval('#settings-dialog select[aria-label="Tuning"]', (x) => x.selectedOptions[0].textContent)).trim(), /^Standard — /);
+    await closeSettings();
+    check(`${P} settings closes`, String(await page.$eval('#settings-dialog', (d) => d.open)), 'false');
 
     // Phones: swiping the page changes tab; swipes on the sideways-scrolling fretboard don't.
     if (name === 'phone') {
       const cdp = await ctx.newCDPSession(page);
       // stepMs > 0 makes a slow drag; hold leaves the finger down (call release() after).
       const swipe = async (sel, dx, { stepMs = 0, hold = false } = {}) => {
-        const r = await page.$eval(sel, (el) => { const b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: Math.max(b.top, 0) + 40 }; });
+        // Scroll the target into view first: the pinned now-bar covers the bottom of a phone screen.
+        const r = await page.$eval(sel, (el) => { el.scrollIntoView({ block: 'center' }); const b = el.getBoundingClientRect(); return { x: b.left + b.width / 2, y: Math.max(b.top, 0) + 40 }; });
         const pt = (x) => [{ x, y: r.y, id: 1 }];
         await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pt(r.x - dx / 2) });
         for (let k = 1; k <= 5; k++) {
@@ -220,13 +235,11 @@ const check = (label, actual, expected) => {
     await page.waitForTimeout(150);
     check(`${P} chords: edited shape identified`, await page.textContent('#panel-chords .hero-title'), 'Cadd11');
     // Guitar settings: renamed header, tone choice (clean / overdriven) used when strumming.
-    check(`${P} guitar settings header`, (await page.textContent('#panel-chords .fb-settings-title')).trim(), 'Guitar settings');
-    await page.click('#panel-chords .fb-settings summary');
-    await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Overdriven")');
+    await inSettings(() => page.click('#settings-dialog .seg[aria-label="Guitar tone"] button:has-text("Overdriven")'));
     await page.click('.now-bar.show .nb-action');
     await page.waitForTimeout(300);
     check(`${P} tone saved`, await page.evaluate(() => FS.settings.fretboard.tone), 'overdrive');
-    check(`${P} tone options`, await page.$$eval('#panel-chords .seg[aria-label="Guitar tone"] button', (b) => b.map((x) => x.textContent).join(' ')), 'Clean Overdriven');
+    check(`${P} tone options`, await page.$$eval('#settings-dialog .seg[aria-label="Guitar tone"] button', (b) => b.map((x) => x.textContent).join(' ')), 'Clean Overdriven');
     // Driven tones stay roughly as loud as clean (rendered offline: a strummed E chord).
     const levels = await page.evaluate(async () => {
       const sr = 44100;
@@ -252,9 +265,11 @@ const check = (label, actual, expected) => {
     });
     check(`${P} tone level vs clean (overdrive)`, String(levels.every((x) => x > 0.6 && x < 2)) + ` (${levels.join(', ')})`, /^true /);
     // Palm mute and effects: switches saved, and the sound behaves as designed (rendered offline).
-    await page.click('#panel-chords .fb-settings .switch-field:has-text("Palm mute")');
-    await page.click('#panel-chords .seg[aria-label="Reverb"] button:has-text("Hall")');
-    await page.click('#panel-chords .seg[aria-label="Delay"] button:has-text("Echo")');
+    await inSettings(async () => {
+      await page.click('#settings-dialog .switch-field:has-text("Palm mute")');
+      await page.click('#settings-dialog .seg[aria-label="Reverb"] button:has-text("Hall")');
+      await page.click('#settings-dialog .seg[aria-label="Delay"] button:has-text("Echo")');
+    });
     await page.click('.now-bar.show .nb-action');
     await page.waitForTimeout(300);
     check(`${P} palm mute / reverb / delay saved`, await page.evaluate(() => { const f = FS.settings.fretboard; return `${f.palmMute} ${f.reverb} ${f.delay}`; }), 'true hall echo');
@@ -291,11 +306,12 @@ const check = (label, actual, expected) => {
     check(`${P} echo repeats after 0.36 s`, fx.echoAt, '0.36');
     check(`${P} reverb: hall rings longer than room, dry has no tail`, String(fx.reverbTails), 'true');
     check(`${P} effects keep the direct sound level`, String(fx.directLevelKept), 'true');
-    await page.click('#panel-chords .fb-settings .switch-field:has-text("Palm mute")');
-    await page.click('#panel-chords .seg[aria-label="Reverb"] button:has-text("Off")');
-    await page.click('#panel-chords .seg[aria-label="Delay"] button:has-text("Off")');
-    await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Clean")');
-    await page.click('#panel-chords .fb-settings summary');
+    await inSettings(async () => {
+      await page.click('#settings-dialog .switch-field:has-text("Palm mute")');
+      await page.click('#settings-dialog .seg[aria-label="Reverb"] button:has-text("Off")');
+      await page.click('#settings-dialog .seg[aria-label="Delay"] button:has-text("Off")');
+      await page.click('#settings-dialog .seg[aria-label="Guitar tone"] button:has-text("Clean")');
+    });
     await shot('chords');
 
     // Arpeggios: C major open position, tab in playing order, position switch, playback highlight.
@@ -351,13 +367,43 @@ const check = (label, actual, expected) => {
       window.__origPlayNote = orig;
       FS.audio.playNote = (midi, when, ...rest) => (window.__notes.push(when), orig(midi, when, ...rest));
     });
-    await page.click('#panel-arpeggios .seg[aria-label="Playback speed"] button:has-text("Max shred")');
+    await inSettings(() => page.click('#settings-dialog .seg[aria-label="Playback speed"] button:has-text("Max shred")'));
     await page.click('.now-bar.show .nb-action');
     const gaps = await page.evaluate(() => { FS.audio.playNote = window.__origPlayNote; return [...new Set(window.__notes.slice(1).map((t, i) => Math.round((t - window.__notes[i]) * 1000)))].join(','); });
     check(`${P} arpeggios: max shred spacing (ms)`, gaps, '50');
     await page.waitForTimeout(1300);
-    await page.click('#panel-arpeggios .seg[aria-label="Playback speed"] button:has-text("Medium")');
+    await inSettings(() => page.click('#settings-dialog .seg[aria-label="Playback speed"] button:has-text("Medium")'));
     await shot('arpeggios');
+
+    // Stop cuts the notes already queued on the audio clock, not just the highlighting: no note that
+    // would start after the press may still sound (checked on scales and on arpeggios).
+    await page.evaluate(() => {
+      const start = AudioBufferSourceNode.prototype.start;
+      const stop = AudioBufferSourceNode.prototype.stop;
+      window.__starts = [];
+      window.__stops = [];
+      AudioBufferSourceNode.prototype.start = function (w) { window.__starts.push([this, w]); return start.apply(this, arguments); };
+      AudioBufferSourceNode.prototype.stop = function (w) { window.__stops.push([this, w]); return stop.apply(this, arguments); };
+      document.addEventListener('pointerdown', () => (window.__pressAt = FS.audio.ctx().currentTime), true);
+    });
+    for (const tab of ['scales', 'arpeggios']) { // ends on Arpeggios, where the tests below expect to be
+      await page.click(`#tab-${tab}`);
+      await page.waitForTimeout(200);
+      await page.evaluate(() => { window.__starts = []; window.__stops = []; window.__pressAt = null; });
+      await page.click('.now-bar.show .nb-action'); // play
+      await page.waitForTimeout(900);
+      await page.evaluate(() => (window.__pressAt = null));
+      await page.click('.now-bar.show .nb-action'); // stop, halfway through
+      await page.waitForTimeout(150);
+      const { queued, sounding } = await page.evaluate(() => {
+        const cut = window.__pressAt;
+        const later = window.__starts.filter(([, w]) => w > cut + 0.1);
+        const still = later.filter(([n, w]) => !window.__stops.some(([m, t]) => m === n && t !== undefined && t <= w));
+        return { queued: later.length, sounding: still.length };
+      });
+      check(`${P} ${tab}: stop cuts the notes still queued`, `${queued > 0 ? 'queued' : 'none queued'}, ${sounding} still sound`, 'queued, 0 still sound');
+      check(`${P} ${tab}: stop returns the button to Play`, (await page.textContent('.now-bar.show .nb-action')).trim(), /^▶ Play/);
+    }
 
     // Vertical board (phones): Chords and Arpeggios crop to the shape, with a whole-neck toggle.
     if (name === 'phone') {
@@ -433,7 +479,7 @@ const check = (label, actual, expected) => {
     await page.click('#tab-trainer');
     await page.waitForTimeout(250);
     const trPrompt = () => page.textContent('#panel-trainer .tr-prompt-text');
-    check(`${P} trainer: default practice area`, (await page.textContent('#panel-trainer .pill.active')).trim(), 'Open – 12');
+    check(`${P} trainer: default practice area`, (await page.textContent('#settings-dialog .pill.active')).trim(), 'Open – 12');
     const askedPc = () => page.evaluate(() => +document.querySelector('#panel-trainer .note').dataset.midi % 12);
     const answerRight = async () => {
       await page.click(`#panel-trainer .tr-answer[data-pc="${await askedPc()}"]`);
@@ -448,7 +494,7 @@ const check = (label, actual, expected) => {
     check(`${P} trainer: score (points asked correct accuracy time in-a-row day-streak)`, stats, /^\d+ 2 1 50% \d+\.\d s 0 \(best 1\) 0$/);
     await page.waitForTimeout(1800);
 
-    await page.click('#panel-trainer .pill:has-text("5 – 9")');
+    await inSettings(() => page.click('#settings-dialog .pill:has-text("5 – 9")'));
     const where = [];
     for (let i = 0; i < 10; i++) {
       where.push(await trPrompt());
@@ -457,17 +503,17 @@ const check = (label, actual, expected) => {
     check(`${P} trainer: questions within frets 5–9`, String(where.every((w) => { const f = +(w.match(/fret (\d+)/) || [0, -1])[1]; return f >= 5 && f <= 9; })), 'true');
 
     // Only string 6 (low E): turn the other five off.
-    for (let n = 1; n <= 5; n++) await page.click(`#panel-trainer .tr-string[title="String ${n}"]`);
+    for (let n = 1; n <= 5; n++) await inSettings(() => page.click(`#settings-dialog .tr-string[title="String ${n}"]`));
     const onStrings = [];
     for (let i = 0; i < 6; i++) {
       onStrings.push(await trPrompt());
       await answerRight();
     }
     check(`${P} trainer: only string 6 asked`, String(onStrings.every((w) => w.startsWith('String 6'))), 'true');
-    for (let n = 1; n <= 5; n++) await page.click(`#panel-trainer .tr-string[title="String ${n}"]`);
+    for (let n = 1; n <= 5; n++) await inSettings(() => page.click(`#settings-dialog .tr-string[title="String ${n}"]`));
 
     // Natural notes only: 7 answer buttons, natural questions.
-    await page.click('#panel-trainer .tr-opt:has-text("Natural notes only")');
+    await inSettings(() => page.click('#settings-dialog .tr-opt:has-text("Natural notes only")'));
     const visible = await page.$$eval('#panel-trainer .tr-answer', (bs) => bs.filter((b) => !b.hidden).length);
     check(`${P} trainer: naturals shows 7 answer buttons`, String(visible), '7');
     const pcs = [];
@@ -476,10 +522,10 @@ const check = (label, actual, expected) => {
       await answerRight();
     }
     check(`${P} trainer: naturals only asks natural notes`, String(pcs.every((pc) => [0, 2, 4, 5, 7, 9, 11].includes(pc))), 'true');
-    await page.click('#panel-trainer .tr-opt:has-text("Natural notes only")');
+    await inSettings(() => page.click('#settings-dialog .tr-opt:has-text("Natural notes only")'));
 
     // Find mode: one miss then all positions (counts as wrong), then a clean round.
-    await page.click('#panel-trainer .seg button:has-text("Find the note")');
+    await inSettings(() => page.click('#settings-dialog .seg[aria-label="Game"] button:has-text("Find the note")'));
     await page.waitForTimeout(200);
     const findTargets = () => page.evaluate(() => {
       const txt = document.querySelector('#panel-trainer .tr-prompt-text').textContent;
@@ -512,7 +558,7 @@ const check = (label, actual, expected) => {
     for (const c of tgt.right) await tapCell(c);
     check(`${P} trainer find: clean round`, await trPrompt(), /^✓ Found all/);
     await page.waitForTimeout(900);
-    await page.click('#panel-trainer .seg button:has-text("Name the note")');
+    await inSettings(() => page.click('#settings-dialog .seg[aria-label="Game"] button:has-text("Name the note")'));
 
     const saved = await page.evaluate(() => {
       const st = JSON.parse(localStorage.getItem('fretbored:v1')).trainer.stats;
@@ -588,7 +634,7 @@ const check = (label, actual, expected) => {
     check(`${P} metronome: sync readout`, (await page.textContent('.sync-val')).trim(), 'Lights 200 ms later');
     const lag200 = await lightLag();
     check(`${P} metronome: +200 ms sync delays the lights ~200 ms`, String(Math.abs(lag200 - lag0 - 200) < 50) + ` (${Math.round(lag0)} → ${Math.round(lag200)} ms)`, /^true /);
-    await page.click('.sync-info button:has-text("Reset")');
+    await inSettings(() => page.click('.sync-info button:has-text("Reset")'));
     check(`${P} metronome: sync reset`, (await page.textContent('.sync-val')).trim(), 'In sync (0 ms)');
     await shot('metronome');
 
@@ -611,8 +657,10 @@ const check = (label, actual, expected) => {
   {
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const page = await ctx.newPage();
+    const { openSettings, closeSettings, inSettings } = settingsHelpers(page);
     page.on('pageerror', (e) => failures.push(`[challenge] page error: ${e.message}`));
     await page.clock.install();
+    await page.clock.pauseAt(Date.now() + 1000); // only runFor moves time on, so real delays don't leak into the timers
     await page.goto(url + '#trainer');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
@@ -633,8 +681,10 @@ const check = (label, actual, expected) => {
   {
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const page = await ctx.newPage();
+    const { openSettings, closeSettings, inSettings } = settingsHelpers(page);
     page.on('pageerror', (e) => failures.push(`[speed] page error: ${e.message}`));
     await page.clock.install();
+    await page.clock.pauseAt(Date.now() + 1000); // only runFor moves time on, so real delays don't leak into the timers
     await page.goto(url + '#trainer');
     await page.evaluate(() => localStorage.clear());
     await page.reload();
@@ -678,16 +728,19 @@ const check = (label, actual, expected) => {
   {
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const page = await ctx.newPage();
+    const { openSettings, closeSettings, inSettings } = settingsHelpers(page);
     page.on('pageerror', (e) => failures.push(`[arp-settings] page error: ${e.message}`));
     await page.goto(url + '#arpeggios');
     await page.waitForTimeout(300);
-    await page.click('#panel-arpeggios .seg[aria-label="Direction"] button:has-text("Down")');
-    await page.click('#panel-arpeggios .seg[aria-label="Playback speed"] button:has-text("Shred")');
+    await inSettings(async () => {
+      await page.click('#settings-dialog .seg[aria-label="Direction"] button:has-text("Down")');
+      await page.click('#settings-dialog .seg[aria-label="Playback speed"] button:has-text("Shred")');
+    });
     check('[arp-settings] Down plays top to bottom', await page.$$eval('#panel-arpeggios .tab-note text', (t) => t.map((x) => x.textContent).join(' ')), '3 0 1 0 2 3 3 0');
     await page.reload(); // immediately — before the batched save would have run
     await page.waitForTimeout(400);
     check('[arp-settings] speed and direction kept', await page.evaluate(() => `${FS.settings.arpeggios.speed} ${FS.settings.arpeggios.order}`), 'shred down');
-    check('[arp-settings] buttons show them', await page.$$eval('#panel-arpeggios .seg button.active', (b) => b.map((x) => x.textContent).filter((x) => ['Down', 'Shred'].includes(x)).join(' ')), 'Down Shred');
+    check('[arp-settings] buttons show them', await page.$$eval('#settings-dialog .seg button.active', (b) => b.map((x) => x.textContent).filter((x) => ['Down', 'Shred'].includes(x)).join(' ')), 'Down Shred');
     await ctx.close();
   }
 
@@ -695,6 +748,7 @@ const check = (label, actual, expected) => {
   {
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, acceptDownloads: true });
     const page = await ctx.newPage();
+    const { openSettings, closeSettings, inSettings } = settingsHelpers(page);
     page.on('pageerror', (e) => failures.push(`[backup] page error: ${e.message}`));
     await page.goto(url + '#trainer');
     await page.waitForTimeout(300);
@@ -703,8 +757,9 @@ const check = (label, actual, expected) => {
       FS.settings.trainer.stats.streak = { count: 4, last: '2026-01-02', best: 9 };
       FS.save();
     });
-    await page.click('#data-btn');
-    const [download] = await Promise.all([page.waitForEvent('download'), page.click('#data-menu [data-act="export"]')]);
+    await openSettings();
+    const [download] = await Promise.all([page.waitForEvent('download'), page.click('#settings-dialog button:has-text("Export")')]);
+    await closeSettings();
     check('[backup] file name', download.suggestedFilename(), /^fretbored-backup-\d{4}-\d{2}-\d{2}\.json$/);
     const file = await download.path();
     const backup = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -715,9 +770,8 @@ const check = (label, actual, expected) => {
     const edited = path.join(os.tmpdir(), `fretbored-backup-test-${process.pid}.json`);
     fs.writeFileSync(edited, JSON.stringify(backup));
     page.once('dialog', (d) => d.accept());
-    await page.click('#data-btn');
-    await page.click('#data-menu [data-act="import"]');
-    await page.setInputFiles('#import-file', edited);
+    await openSettings();
+    await page.setInputFiles('#settings-dialog input[type="file"]', edited);
     await page.waitForLoadState('load');
     await page.waitForTimeout(500);
     check('[backup] imported theme', await page.$eval('html', (e) => e.dataset.theme), 'dracula');
@@ -726,9 +780,11 @@ const check = (label, actual, expected) => {
     // A file that is not a backup is refused and changes nothing.
     fs.writeFileSync(edited, JSON.stringify({ hello: 1 }));
     page.once('dialog', (d) => d.accept());
-    await page.setInputFiles('#import-file', edited);
+    await openSettings();
+    await page.setInputFiles('#settings-dialog input[type="file"]', edited);
     await page.waitForTimeout(400);
-    check('[backup] wrong file refused', (await page.textContent('#toast')).trim(), 'This file is not a Fretbored backup.');
+    check('[backup] wrong file refused', (await page.textContent('#settings-dialog .settings-status')).trim(), 'This file is not a Fretbored backup.');
+    await closeSettings();
     check('[backup] nothing changed', await page.$eval('html', (e) => e.dataset.theme), 'dracula');
     fs.unlinkSync(edited);
     await ctx.close();
@@ -739,6 +795,7 @@ const check = (label, actual, expected) => {
   {
     const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const page = await ctx.newPage();
+    const { openSettings, closeSettings, inSettings } = settingsHelpers(page);
     page.on('pageerror', (e) => failures.push(`[streak] page error: ${e.message}`));
     await page.goto(url + '#trainer');
     await page.waitForTimeout(300);

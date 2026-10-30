@@ -135,61 +135,6 @@
     return close;
   }
 
-  // Back up / restore everything stored in the browser as a JSON file.
-  function setupDataMenu() {
-    const btn = document.getElementById('data-btn');
-    const menu = document.getElementById('data-menu');
-    const file = document.getElementById('import-file');
-    popupMenu(btn, menu);
-    menu.querySelector('[data-act="export"]').addEventListener('click', () => {
-      const data = FS.exportData();
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `fretbored-backup-${data.exported.slice(0, 10)}.json`;
-      document.body.append(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
-      FS.toast('Backup saved — import it on another device to carry everything over');
-    });
-    menu.querySelector('[data-act="import"]').addEventListener('click', () => file.click());
-    file.addEventListener('change', async () => {
-      const f = file.files[0];
-      file.value = '';
-      if (!f) return;
-      let data;
-      try {
-        data = JSON.parse(await f.text());
-      } catch (e) {
-        FS.toast('That file is not a Fretbored backup');
-        return;
-      }
-      const when = data && data.exported ? new Date(data.exported).toLocaleString() : null;
-      const ok = window.confirm(`Import this backup${when ? ` from ${when}` : ''}?\n\nIt replaces everything saved on this device: settings, themes, custom tunings, Trainer history and daily streak.`);
-      if (!ok) return;
-      const err = FS.importData(data);
-      if (err) {
-        FS.toast(err);
-        return;
-      }
-      try {
-        sessionStorage.setItem('fretbored:imported', '1');
-      } catch (e) {
-        /* only used for the confirmation toast */
-      }
-      location.reload();
-    });
-    try {
-      if (sessionStorage.getItem('fretbored:imported')) {
-        sessionStorage.removeItem('fretbored:imported');
-        setTimeout(() => FS.toast('Backup imported'), 300);
-      }
-    } catch (e) {
-      /* sessionStorage unavailable */
-    }
-  }
-
   // Panels are built the first time they are shown so hidden fretboards don't render at width 0.
   function ensureInit(tab) {
     if (inited[tab]) return;
@@ -363,7 +308,7 @@
     });
 
     setupThemeMenu();
-    setupDataMenu();
+    FS.setupSettings(ensureInit);
 
     const fromHash = location.hash.slice(1);
     FS.showTab(TABS.includes(fromHash) ? fromHash : FS.settings.tab);

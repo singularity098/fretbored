@@ -11,10 +11,10 @@ Guitar scales, chords, circle of fifths and a precise metronome — in the brows
 - **Trainer**: fretboard note games — name the highlighted note, or find every place a note occurs — with fret/string practice areas, naturals-only, answer timing with speed-bonus points, weak-spot focus (misses and slow notes), sound, a 60-second challenge, a daily streak (50 notes a day), and saved progress (7-day history, accuracy and speed by note and string).
 - **Tuner**: traditional needle and strobe modes, instrument (per-string, using your tuning) or chromatic, adjustable A4 reference and reference tones.
 - **Metronome**: tap tempo, accents, odd-meter grouping, subdivisions, step and gradual tempo trainer, gap trainer, and a visual-sync adjustment for devices with audio delay. Sample-accurate Web Audio scheduling.
-- Shared fretboard settings: 4–8 strings (guitar and bass), preset and custom tunings, 21/22/24 frets, note or interval labels (note dot colours follow the app theme), clean or overdriven guitar tone with palm mute, reverb and delay, ebony/rosewood/maple, left-handed mode, and a sideways or vertical layout on phones (the vertical board on Chords and Arpeggios shows just the current shape, with a button for the whole neck).
+- Guitar settings (in Settings, ⚙ at the top — the same for every tab): 4–8 strings (guitar and bass), preset and custom tunings, 21/22/24 frets, note or interval labels (note dot colours follow the app theme), clean or overdriven guitar tone with palm mute, reverb and delay, ebony/rosewood/maple, left-handed mode, and a sideways or vertical layout on phones (the vertical board on Chords and Arpeggios shows just the current shape, with a button for the whole neck).
 - App colour themes: Dark (default), Light, AMOLED Black, Dracula, Solarized, Tokyo Night and Catppuccin Latte / Frappé / Macchiato / Mocha — pick one from the palette button at the top.
 - App styles for the note dots, buttons and tabs, combined with any colour theme: Ring (default: dark dots with a coloured ring), Classic (filled dots) and Target — in the same palette menu.
-- Back up everything (settings, custom tunings, Trainer history and streak) to a file and import it on another device — the ⤒ button at the top.
+- **Settings** (⚙ at the top): the guitar settings, arpeggio direction and speed, the Trainer's game, frets, quiz strings and options, the metronome's click sound — and backup: export everything (settings, custom tunings, Trainer history and streak) to a file and import it on another device.
 - On phones, swipe the page left or right to move between tabs — the page follows your finger.
 
 ## Screenshots
@@ -84,7 +84,8 @@ Live site: **https://singularity098.github.io/fretbored/**
 | `js/store.js` | Settings persistence, events, helpers |
 | `js/audio.js` | Web Audio context, plucked-string synth, sample playback |
 | `js/fretboard.js` | Shared SVG fretboard |
-| `js/fbcontrols.js` | Guitar settings bar (tuning, frets, tone, wood…) and custom tuning editor |
+| `js/fbcontrols.js` | Guitar settings fields (tuning, frets, tone, wood…) and custom tuning editor |
+| `js/settings.js` | The Settings dialog (guitar, tab options, backup) |
 | `js/pitch.js` | Pitch detection (McLeod pitch method) |
 | `js/scales.js`, `js/chords.js`, `js/arpeggios.js`, `js/circle.js`, `js/trainer.js`, `js/metronome.js`, `js/tuner.js` | The tabs |
 | `js/app.js` | Tabs, theme, startup |

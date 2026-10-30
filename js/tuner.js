@@ -46,24 +46,6 @@
       targetSeg.append(h('button', { dataset: { v }, onclick: () => { st.target = v; st.lock = -1; resetReading(); FS.save(); renderControls(); } }, label));
     }
 
-    const stringsSel = h('select', { 'aria-label': 'Number of strings' });
-    for (const [v, label] of FS.STRING_OPTIONS) stringsSel.append(h('option', { value: v }, label));
-    stringsSel.addEventListener('change', () => {
-      const fb = FS.settings.fretboard;
-      fb.strings = +stringsSel.value;
-      fb.tuning = FS.allTunings().find((x) => x.strings === fb.strings).id;
-      st.lock = -1;
-      FS.save();
-      FS.emit('fretboard');
-    });
-    const tuningSel = h('select', { class: 'tuning-select', 'aria-label': 'Tuning' });
-    tuningSel.addEventListener('change', () => {
-      FS.settings.fretboard.tuning = tuningSel.value;
-      st.lock = -1;
-      FS.save();
-      FS.emit('fretboard');
-    });
-
     const a4Val = h('span', { class: 'stepper-val wide' });
     const a4Stepper = h('div', { class: 'stepper' },
       h('button', { class: 'btn round small', 'aria-label': 'Lower reference pitch', onclick: () => setA4(st.a4 - 1) }, '−'),
@@ -139,7 +121,6 @@
           modeSeg,
           h('h3', { class: 'section-title' }, 'Tune to'),
           targetSeg,
-          h('div', { class: 'inline wrap gap-lg tn-tuning' }, field('Strings', stringsSel), field('Tuning', tuningSel)),
           h('h3', { class: 'section-title' }, 'Calibration'),
           h('div', { class: 'inline wrap gap-lg' }, field('Reference A4', a4Stepper), field('Sensitivity', sens)),
           h('p', { class: 'muted small' }, 'Raise sensitivity in a quiet room or for a quiet instrument; lower it if background noise makes the reading jump. Audio is analysed on your device and never leaves it.')
@@ -384,15 +365,6 @@
     function renderControls() {
       modeSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.mode));
       targetSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.target));
-      const fb = FS.settings.fretboard;
-      const cur = FS.currentTuning();
-      stringsSel.value = fb.strings;
-      tuningSel.innerHTML = '';
-      FS.allTunings()
-        .filter((x) => x.strings === fb.strings)
-        .forEach((x) => tuningSel.append(h('option', { value: x.id }, `${x.name} — ${FS.tuningLabel(x)}`)));
-      tuningSel.value = cur.id;
-      tuningSel.parentElement.parentElement.hidden = st.target !== 'instrument';
       a4Val.textContent = `${st.a4} Hz`;
       sens.value = st.sensitivity;
       needleView.hidden = st.mode !== 'needle';

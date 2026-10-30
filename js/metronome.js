@@ -426,6 +426,17 @@
 
     const field = (label, ...ctl) => h('div', { class: 'field' }, h('span', { class: 'field-label' }, label), ...ctl);
 
+    // Click sound, volumes and visual sync live in Settings.
+    FS.settingsHost('metronome').append(
+      soundSeg,
+      h('div', { class: 'inline wrap gap-lg' }, field('Volume', volSlider), field('Subdivision volume', subVolSlider)),
+      h('div', { class: 'field sync-field' },
+        h('span', { class: 'field-label' }, 'Visual sync'),
+        h('div', { class: 'inline sync-row' }, syncStep('−', -5, 'Lights 5 ms earlier'), syncSlider, syncStep('+', 5, 'Lights 5 ms later')),
+        h('div', { class: 'inline sync-info' }, syncVal, syncReset),
+        h('p', { class: 'hint' }, 'If the clicks sound after the lights flash (common with Bluetooth speakers), move right; if before, move left.'))
+    );
+
     panel.append(
       h('div', { class: 'met-layout' },
         h('div', { class: 'card met-main' },
@@ -448,16 +459,6 @@
             ),
             h('h3', { class: 'section-title' }, 'Subdivision'),
             subPills
-          ),
-          h('div', { class: 'card' },
-            h('h3', { class: 'section-title' }, 'Sound'),
-            soundSeg,
-            h('div', { class: 'inline wrap gap-lg' }, field('Volume', volSlider), field('Subdivision volume', subVolSlider)),
-            h('div', { class: 'field sync-field' },
-              h('span', { class: 'field-label' }, 'Visual sync'),
-              h('div', { class: 'inline sync-row' }, syncStep('−', -5, 'Lights 5 ms earlier'), syncSlider, syncStep('+', 5, 'Lights 5 ms later')),
-              h('div', { class: 'inline sync-info' }, syncVal, syncReset),
-              h('p', { class: 'hint' }, 'If the clicks sound after the lights flash (common with Bluetooth speakers), move right; if before, move left.'))
           ),
           h('div', { class: 'card' },
             h('h3', { class: 'section-title' }, 'Tempo trainer'),

@@ -255,7 +255,21 @@
     src.connect(g).connect(clean ? master : chainInput(c));
     src.start(t);
     src.stop(t + dur + 0.3);
-    return src;
+    return { src, gain: g, when: t };
+  }
+
+  // Cuts a note from playNote short. Notes are queued on the audio clock up front, so stopping the
+  // timers that highlight them is not enough: a note not yet started never sounds, and one that is
+  // sounding fades out over a few ms (an abrupt cut would click).
+  function stopNote(note) {
+    const now = getCtx().currentTime;
+    if (note.when > now) {
+      note.src.stop(now);
+      return;
+    }
+    note.gain.gain.cancelScheduledValues(now);
+    note.gain.gain.setTargetAtTime(0, now, 0.004);
+    note.src.stop(now + 0.03);
   }
 
   /* ---- Click sounds ---- */
@@ -336,5 +350,5 @@
 
   // buildTone / buildChain / pluck are exposed so tests can render offline and check the sound.
   const pluck = (midi, muted) => getPluck(midi, muted).buffer;
-  FS.audio = { ctx: getCtx, playNote, prepare, loadSamples, playSample, playBuffer, samples, buildTone, buildChain, pluck };
+  FS.audio = { ctx: getCtx, playNote, stopNote, prepare, loadSamples, playSample, playBuffer, samples, buildTone, buildChain, pluck };
 })();

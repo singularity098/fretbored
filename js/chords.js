@@ -34,7 +34,6 @@
     const alts = h('div', { class: 'match' });
     const box = h('div', { class: 'chord-box' });
 
-    const fbControls = h('div');
     const fbHost = h('div');
 
     panel.append(
@@ -53,7 +52,6 @@
         box
       ),
       h('div', { class: 'card board-card' },
-        fbControls,
         fbHost,
         h('p', { class: 'hint' }, 'Tap a fret to move that string’s note there · tap a played note again to mute the string')
       )
@@ -61,7 +59,6 @@
 
     // The fretboard is always the first section on a tab (owner's layout rule).
     panel.prepend(panel.querySelector('.board-card'));
-    FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, { onToggle: edit, onRoot: edit });
     const nowBar = FS.createNowBar(panel, panel.querySelector('.chord-hero'), () => strum());
 

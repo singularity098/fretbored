@@ -33,7 +33,6 @@
     const match = h('div', { class: 'match' });
     const resetBtn = h('button', { class: 'btn ghost', title: 'Undo manual edits', onclick: () => reset() }, 'Reset');
 
-    const fbControls = h('div');
     const fbHost = h('div');
 
     // What a plain tap does. "Set root" is a gesture-free alternative to long-press.
@@ -59,7 +58,6 @@
         match
       ),
       h('div', { class: 'card board-card' },
-        fbControls,
         fbHost,
         h('div', { class: 'tap-row' },
           h('span', { class: 'field-label' }, 'Tap to'),
@@ -70,7 +68,6 @@
 
     // The fretboard is always the first section on a tab (owner's layout rule).
     panel.prepend(panel.querySelector('.board-card'));
-    FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, {
       onToggle: (s, f) => (tapMode === 'root' ? makeRoot(pcAt(s, f)) : toggle(pcAt(s, f))),
       onRoot: (s, f) => makeRoot(pcAt(s, f)),
@@ -257,18 +254,20 @@
       FS.audio.prepare(seq.map((m) => m + bump));
       const t0 = ctx.currentTime + 0.05;
       const timers = [];
+      const notes = [];
       seq.forEach((midi, i) => {
         const when = t0 + i * step;
-        FS.audio.playNote(midi + bump, when, i === seq.length - 1 ? 1.2 : step * 1.6, 0.55);
+        notes.push(FS.audio.playNote(midi + bump, when, i === seq.length - 1 ? 1.2 : step * 1.6, 0.55));
         timers.push(setTimeout(() => board.flash(midi, step * 1000), (when - ctx.currentTime) * 1000));
       });
       timers.push(setTimeout(stopPlaying, (seq.length * step + 0.6) * 1000));
-      playing = { timers };
+      playing = { timers, notes };
       render();
     }
     function stopPlaying() {
       if (!playing) return;
       playing.timers.forEach(clearTimeout);
+      playing.notes.forEach(FS.audio.stopNote); // the notes are already queued: cut them too
       playing = null;
       render();
     }

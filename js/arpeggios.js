@@ -62,7 +62,6 @@
     const alts = h('div', { class: 'match' });
     const tabHost = h('div', { class: 'tab-host', role: 'img' });
 
-    const fbControls = h('div');
     const fbHost = h('div');
 
     panel.append(
@@ -77,14 +76,10 @@
         h('div', { class: 'hero-head' }, h('div', null, title, sub)),
         chips,
         alts,
-        h('div', { class: 'inline wrap gap-lg' },
-          h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Direction'), orderSeg),
-          h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Speed'), speedSeg)),
         h('h3', { class: 'section-title' }, 'Tablature'),
         tabHost
       ),
       h('div', { class: 'card board-card' },
-        fbControls,
         fbHost,
         h('p', { class: 'hint' }, 'Tap the fretboard to add or remove notes — the arpeggio is named as you go · long-press (or right-click) a note to make it the root · numbers in the tab are frets, top line is the highest string')
       )
@@ -92,8 +87,12 @@
 
     // The fretboard is always the first section on a tab (owner's layout rule).
     panel.prepend(panel.querySelector('.board-card'));
-    FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, { onToggle: tapNote, onRoot: rootNote });
+    // Direction and speed live in Settings.
+    FS.settingsHost('arpeggios').append(
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Direction'), orderSeg),
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Speed'), speedSeg)
+    );
     const nowBar = FS.createNowBar(panel, panel.querySelector('.arp-hero'), () => (playing ? stopPlaying() : play()));
 
     /* ---- Shapes ---- */
@@ -243,23 +242,25 @@
       const ctx = FS.audio.ctx();
       const t0 = ctx.currentTime + 0.06;
       const timers = [];
+      const notes = [];
       seq.forEach((x, i) => {
         const when = t0 + i * step;
         // The last note is as long as the others (it used to ring for 1.4 s, which sounded unnatural).
-        FS.audio.playNote(x.midi + bump(), when, step * 1.8, 0.5);
+        notes.push(FS.audio.playNote(x.midi + bump(), when, step * 1.8, 0.5));
         timers.push(setTimeout(() => {
           board.flash(x.midi, step * 1000);
           highlightTab(i);
         }, (when - ctx.currentTime) * 1000));
       });
       timers.push(setTimeout(stopPlaying, (seq.length * step + 0.8) * 1000));
-      playing = { timers };
+      playing = { timers, notes };
       renderControls();
     }
 
     function stopPlaying() {
       if (!playing) return;
       playing.timers.forEach(clearTimeout);
+      playing.notes.forEach(FS.audio.stopNote); // the notes are already queued: cut them too
       playing = null;
       highlightTab(-1);
       renderControls();

@@ -233,19 +233,20 @@
     const stringGrid = h('div', { class: 'tr-acc-grid' });
     const resetStatsBtn = h('button', { class: 'btn ghost small', onclick: () => resetStats() }, 'Reset progress');
 
-    const fbControls = h('div');
     const fbHost = h('div');
 
+    // Game, frets, strings and options live in Settings.
+    FS.settingsHost('trainer').append(
+      h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Game'), modeSeg),
+      h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Frets'),
+        h('div', { class: 'stack' },
+          presets,
+          h('div', { class: 'inline wrap' }, h('span', { class: 'muted small' }, 'From'), fromSel, h('span', { class: 'muted small' }, 'to'), toSel))),
+      h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Quiz strings'), stringChips),
+      h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Options'), h('div', { class: 'tr-options' }, ...options))
+    );
+
     panel.append(
-      h('div', { class: 'card controls' },
-        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Game'), modeSeg),
-        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Frets'),
-          h('div', { class: 'stack' },
-            presets,
-            h('div', { class: 'inline wrap' }, h('span', { class: 'muted small' }, 'From'), fromSel, h('span', { class: 'muted small' }, 'to'), toSel))),
-        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Quiz strings'), stringChips),
-        h('div', { class: 'control-row' }, h('span', { class: 'row-label' }, 'Options'), h('div', { class: 'tr-options' }, ...options))
-      ),
       h('div', { class: 'card tr-score' },
         h('div', { class: 'tr-score-row' },
           h('div', { class: 'tr-stats' }, sPoints.el, sAsked.el, sCorrect.el, sPct.el, sTime.el, sStreak.el, sDaily.el),
@@ -253,7 +254,6 @@
         timedBox
       ),
       h('div', { class: 'card board-card' },
-        fbControls,
         promptRow,
         fbHost,
         answersTitle,
@@ -274,7 +274,6 @@
 
     // The fretboard is always the first section on a tab (owner's layout rule).
     panel.prepend(panel.querySelector('.board-card'));
-    FS.createFretboardControls(fbControls);
     const board = new FS.Fretboard(fbHost, { onToggle: tapCell, onRoot: tapCell });
 
     /* ---------------------------------------------------------------- Questions */
@@ -327,10 +326,13 @@
       }
       game.shownAt = performance.now();
       game.untimed = false;
+      // Built from Settings while the tab was hidden: nobody has seen it, so it is asked again when the tab opens.
+      game.unseen = FS.settings.tab !== 'trainer';
       render();
       if (game.q && st.mode === 'name') board.scrollToFret(game.q.f);
       else board.scrollToFret(Math.round((st.from + st.to) / 2));
-      if (st.sound) playQuestion();
+      // Built early from Settings (tab not shown): stay quiet until the tab is opened.
+      if (st.sound && FS.settings.tab === 'trainer') playQuestion();
     }
 
     function playQuestion() {
@@ -730,6 +732,7 @@
       } else renderBoard();
     });
     FS.on('tab', (tab) => {
+      if (tab === 'trainer' && game.unseen) newQuestion();
       if (tab !== 'trainer') game.untimed = true;
       if (tab !== 'trainer' && timedRunning()) stopTimed(true);
     });
