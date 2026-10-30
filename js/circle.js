@@ -120,7 +120,6 @@
     const noteChips = h('div', { class: 'note-chips' });
     const chordTable = h('div', { class: 'chord-table' });
     const related = h('div', { class: 'related' });
-    const playBtn = h('button', { class: 'btn primary', onclick: () => playScale() }, '▶ Play scale');
     const openBtn = h('button', {
       class: 'btn',
       onclick: () => {
@@ -145,7 +144,7 @@
             h('h3', { class: 'section-title' }, 'Diatonic chords'),
             chordTable,
             related,
-            h('div', { class: 'hero-actions' }, playBtn, openBtn)
+            h('div', { class: 'hero-actions' }, openBtn)
           )
         )
       )

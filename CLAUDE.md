@@ -103,7 +103,8 @@ preview, `stylePreview`). Style is independent of the colour theme: a style only
 fills, rings, glows and shadows, and takes every colour from the theme. Classic has no rules; each other
 style is a `:root[data-style='id']` block at the end of `style.css` covering note dots (fretboard + chord
 diagram `.cb-dot`, which carries `--dot`), active tabs, pills, primary buttons, segmented buttons,
-switches and metronome beat lights. Ring/Target use `--ring-fill` (a fixed near-black) for dots.
+switches and metronome beat lights. Ring/Target use `--ring-fill` (a fixed near-black) for dots; Ring's metronome beat lights take it for their centre too.
+The tabs have no play buttons of their own: the pinned now-bar's action is the only one (the Strum/Play/Play scale hero buttons were removed).
 In `fretboard.js` every non-faint note gets a `.halo` ring (shown only on the root, or on all notes in
 Target, which also shrinks the dot to 0.78 r so rings on neighbouring strings don't touch). A style
 change emits `fretboard` to redraw. Theme-colour tests read the dot's `stroke` (Ring's fill is dark).

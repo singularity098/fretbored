@@ -223,7 +223,7 @@ const check = (label, actual, expected) => {
     check(`${P} guitar settings header`, (await page.textContent('#panel-chords .fb-settings-title')).trim(), 'Guitar settings');
     await page.click('#panel-chords .fb-settings summary');
     await page.click('#panel-chords .seg[aria-label="Guitar tone"] button:has-text("Overdriven")');
-    await page.click('#panel-chords .hero-actions button');
+    await page.click('.now-bar.show .nb-action');
     await page.waitForTimeout(300);
     check(`${P} tone saved`, await page.evaluate(() => FS.settings.fretboard.tone), 'overdrive');
     check(`${P} tone options`, await page.$$eval('#panel-chords .seg[aria-label="Guitar tone"] button', (b) => b.map((x) => x.textContent).join(' ')), 'Clean Overdriven');
@@ -255,7 +255,7 @@ const check = (label, actual, expected) => {
     await page.click('#panel-chords .fb-settings .switch-field:has-text("Palm mute")');
     await page.click('#panel-chords .seg[aria-label="Reverb"] button:has-text("Hall")');
     await page.click('#panel-chords .seg[aria-label="Delay"] button:has-text("Echo")');
-    await page.click('#panel-chords .hero-actions button');
+    await page.click('.now-bar.show .nb-action');
     await page.waitForTimeout(300);
     check(`${P} palm mute / reverb / delay saved`, await page.evaluate(() => { const f = FS.settings.fretboard; return `${f.palmMute} ${f.reverb} ${f.delay}`; }), 'true hall echo');
     const fx = await page.evaluate(async () => {
@@ -340,10 +340,10 @@ const check = (label, actual, expected) => {
     await page.click('#panel-arpeggios .pill[title^="G shape"]');
     await page.waitForTimeout(150);
     check(`${P} arpeggios: G shape tab`, await tabFrets(), /^8 7 5 5 5 8 8/);
-    await page.click('#panel-arpeggios .play-btn');
+    await page.click('.now-bar.show .nb-action');
     await page.waitForTimeout(700);
     check(`${P} arpeggios: playback highlights the tab`, String(await page.$$eval('#panel-arpeggios .tab-note.on', (n) => n.length)), '1');
-    await page.click('#panel-arpeggios .play-btn');
+    await page.click('.now-bar.show .nb-action');
     // Max shred: notes scheduled 50 ms apart on the audio clock.
     await page.evaluate(() => {
       window.__notes = [];
@@ -352,7 +352,7 @@ const check = (label, actual, expected) => {
       FS.audio.playNote = (midi, when, ...rest) => (window.__notes.push(when), orig(midi, when, ...rest));
     });
     await page.click('#panel-arpeggios .seg[aria-label="Playback speed"] button:has-text("Max shred")');
-    await page.click('#panel-arpeggios .play-btn');
+    await page.click('.now-bar.show .nb-action');
     const gaps = await page.evaluate(() => { FS.audio.playNote = window.__origPlayNote; return [...new Set(window.__notes.slice(1).map((t, i) => Math.round((t - window.__notes[i]) * 1000)))].join(','); });
     check(`${P} arpeggios: max shred spacing (ms)`, gaps, '50');
     await page.waitForTimeout(1300);

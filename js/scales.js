@@ -31,7 +31,6 @@
     const sub = h('div', { class: 'hero-sub' });
     const chips = h('div', { class: 'note-chips' });
     const match = h('div', { class: 'match' });
-    const playBtn = h('button', { class: 'btn primary play-btn', onclick: () => play() });
     const resetBtn = h('button', { class: 'btn ghost', title: 'Undo manual edits', onclick: () => reset() }, 'Reset');
 
     const fbControls = h('div');
@@ -54,7 +53,7 @@
       h('div', { class: 'card hero' },
         h('div', { class: 'hero-head' },
           h('div', null, title, sub),
-          h('div', { class: 'hero-actions' }, resetBtn, playBtn)
+          h('div', { class: 'hero-actions' }, resetBtn)
         ),
         chips,
         match
@@ -208,7 +207,6 @@
         if (!m.sameNotes.length && !m.near.length) match.append(h('span', { class: 'match-label' }, 'No close match in the library'));
       }
 
-      playBtn.innerHTML = playing ? '■ Stop' : '▶ Play';
       nowBar.set({
         accent: t.pretty(sp.root),
         rest: scale ? scale.name : 'Custom scale',

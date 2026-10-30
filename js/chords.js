@@ -33,7 +33,6 @@
     const chips = h('div', { class: 'note-chips' });
     const alts = h('div', { class: 'match' });
     const box = h('div', { class: 'chord-box' });
-    const playBtn = h('button', { class: 'btn primary', onclick: () => strum() }, '▶ Strum');
 
     const fbControls = h('div');
     const fbHost = h('div');
@@ -47,7 +46,7 @@
       ),
       h('div', { class: 'card hero chord-hero' },
         h('div', { class: 'hero-main' },
-          h('div', { class: 'hero-head' }, h('div', null, title, sub), h('div', { class: 'hero-actions' }, playBtn)),
+          h('div', { class: 'hero-head' }, h('div', null, title, sub)),
           chips,
           alts
         ),

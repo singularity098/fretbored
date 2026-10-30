@@ -39,7 +39,7 @@
   - A "Tap to: Add / remove · Set root" switch under the fretboard lets a plain tap set the root, as a gesture-free alternative
   - If the notes don't form a known scale, the scale is shown as "Custom" with the closest matches (e.g. "Dorian +B −B♭") and any scale the same notes form from another root; tapping a suggestion selects it
   - Scales that share the same notes as other scales/modes are listed (e.g. C Major = D Dorian = A Natural Minor …)
-- The user may click on a play button which will play a brief ascension up the scale until the next octave
+- The user may press play (in the pinned bar), which will play a brief ascension up the scale until the next octave
   - Notes light up on the fretboard as they play
 ##### Guitar chords tab
 - Similar to guitar scales tab, the user may select any root note
@@ -48,7 +48,7 @@
   - 6, m6, 6/9, add9, m(add9), add11, 7sus2, m7♭5, m(maj7), 7♭5, 7♯5, maj7♯5, maj7♭5, 9, maj9, m9, 7♭9, 7♯9, 9sus4, 7♯11, 11, m11, 13, maj13, m13
 - There is a position selection as well, example 1, 2, 3, 4, 5, which designates roughly how far up on the fretboard the chord lands.
   - Playable voicings are generated for the current tuning (root in the bass, max 4 fingers or a barre, 4-fret span)
-  - A chord diagram shows the selected shape, with the same chord as tablature beside it (one column, highest string on top, x for muted strings, roots highlighted) and the usual shorthand underneath (low string first, e.g. x32010); a "Strum" button plays it
+  - A chord diagram shows the selected shape, with the same chord as tablature beside it (one column, highest string on top, x for muted strings, roots highlighted) and the usual shorthand underneath (low string first, e.g. x32010); the "Strum" button in the pinned bar plays it
   - "All chord tones" toggle shows every chord tone on the neck behind the selected shape
 - User may also manually add or remove notes by clicking on them, and the application will automatically figure out if there is some chord match and change the selection
   - Tapping a fret moves that string's note there; tapping a played note again mutes the string
@@ -59,7 +59,7 @@
   - Positions: the five CAGED shapes per octave, each a 5-fret window anchored on a root (E and G shapes on the 6th string, A and C on the 5th, D on the 4th) holding every chord tone once — e.g. E major: E shape 0–4, D 1–5, C 4–8, A 7–11, G 9–12. Buttons read "A 7" (A shape from fret 7). Shape names appear in standard-like tunings; other tunings get numbered positions
   - Sweep: sweep-picking shapes — 6-, 5- and 4-string sweeps from a root to a root on the top string, and 3-string sweeps on the top three strings from each chord tone to its octave; at most two notes per string (hammer-ons/pull-offs), within a 6-fret span. E.g. E major 5-string: A 7·11, D 9, G 9, B 9, e 7·12. Buttons read "5-str 7"
 - The shape is shown as dots on the shared fretboard (roots highlighted; "All arpeggio tones" shows the rest of the neck faintly) and as tablature in playing order, so it's easy to see how to play it
-- Direction: Up, Down (highest note first) or Up & down; Play button with six speeds — Slow, Medium, Fast, Faster, Shred (≈13 notes/s, 16ths at 200 BPM) and Max shred (20 notes/s, 16ths at 300 BPM); two rows of three on phones — the current note lights up in the tab and on the fretboard; the last note rings as long as the others (it used to ring out for over a second, which sounded unnatural at fast speeds)
+- Direction: Up, Down (highest note first) or Up & down; Play button (in the pinned bar) with six speeds — Slow, Medium, Fast, Faster, Shred (≈13 notes/s, 16ths at 200 BPM) and Max shred (20 notes/s, 16ths at 300 BPM); two rows of three on phones — the current note lights up in the tab and on the fretboard; the last note rings as long as the others (it used to ring out for over a second, which sounded unnatural at fast speeds)
 - Edit the shape like on the Scales and Chords tabs: tap a fretboard note to add it (it plays) or tap a note in the shape to remove it. The shape becomes "Custom" and the arpeggio is identified from its notes (lowest note preferred as the root); other names for the same notes are offered under "Also" (tap one to switch), and long-press / right-click a note to make it the root. Chord tones missing from the shape are greyed; notes that match nothing show "? Unknown arpeggio". Tab and playback follow the custom notes (low to high). Choosing a root, type, style or position goes back to the generated shapes; a custom shape is remembered, and dropped if the tuning changes
 - The pinned "now viewing" bar shows the arpeggio while scrolling
 

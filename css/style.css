@@ -616,7 +616,6 @@ input:disabled { opacity: 0.45; cursor: not-allowed; }
 .accent-text { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero-sub { color: var(--text-2); margin-top: 4px; font-size: 14px; }
 .hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.play-btn { min-width: 96px; }
 
 .note-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
@@ -1162,8 +1161,10 @@ dialog::backdrop { background: rgba(5, 8, 14, 0.6); backdrop-filter: blur(3px); 
   background: linear-gradient(var(--bg), var(--bg)) padding-box, linear-gradient(135deg, var(--accent), var(--accent-2)) border-box;
 }
 :root[data-style='ring'] .switch input:checked + .slider::after { top: 2px; left: 2px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
-:root[data-style='ring'] .beat-dot.on span { background: var(--bg); color: var(--accent-text); border-color: var(--accent); border-width: 3px; box-shadow: none; }
-:root[data-style='ring'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { background: var(--bg); color: var(--text); border-color: var(--accent-2); }
+/* Beat lights: a black centre like the note dots; the coloured ring shows the level, and a lit beat gets a thicker one. */
+:root[data-style='ring'] .beat-dot span { background: var(--ring-fill); box-shadow: none; }
+:root[data-style='ring'] .beat-dot.on span { color: var(--accent-text); border-color: var(--accent); border-width: 3px; }
+:root[data-style='ring'] .beat-dot.on:is([data-level='2'], [data-level='1']) span { color: var(--text); border-color: var(--accent-2); }
 /* Circle of fifths: diatonic segments are dark like the dots, each with a ring in its colour. */
 :root[data-style='ring'] .cof-seg.on path { fill: var(--ring-fill); stroke: var(--dot-note); stroke-width: 2.5; }
 :root[data-style='ring'] .cof-seg.on text { fill: color-mix(in srgb, var(--dot-note) 80%, white); }

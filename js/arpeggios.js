@@ -60,7 +60,6 @@
     const sub = h('div', { class: 'hero-sub' });
     const chips = h('div', { class: 'note-chips' });
     const alts = h('div', { class: 'match' });
-    const playBtn = h('button', { class: 'btn primary play-btn', onclick: () => (playing ? stopPlaying() : play()) });
     const tabHost = h('div', { class: 'tab-host', role: 'img' });
 
     const fbControls = h('div');
@@ -75,7 +74,7 @@
           h('label', { class: 'field switch-field compact' }, h('span', { class: 'field-label' }, 'All arpeggio tones'), h('span', { class: 'switch' }, showAll, h('span', { class: 'slider' })))))
       ),
       h('div', { class: 'card hero arp-hero' },
-        h('div', { class: 'hero-head' }, h('div', null, title, sub), h('div', { class: 'hero-actions' }, playBtn)),
+        h('div', { class: 'hero-head' }, h('div', null, title, sub)),
         chips,
         alts,
         h('div', { class: 'inline wrap gap-lg' },
@@ -282,7 +281,6 @@
       orderSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.order));
       styleSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.style));
       speedSeg.querySelectorAll('button').forEach((b) => b.classList.toggle('active', b.dataset.v === st.speed));
-      playBtn.textContent = playing ? '■ Stop' : '▶ Play';
     }
 
     function render() {
