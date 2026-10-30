@@ -208,7 +208,7 @@
         accent: t.pretty(sp.root),
         rest: scale ? scale.name : 'Custom scale',
         notes: sp.names.map(t.pretty).join('  ·  '),
-        action: playing ? '■ Stop' : '▶ Play',
+        action: '▶ Play',
       });
       renderBoard(sp);
     }
@@ -240,10 +240,7 @@
 
     let playing = null;
     function play() {
-      if (playing) {
-        stopPlaying();
-        return;
-      }
+      stopPlaying(); // pressing Play again starts the scale over from its root
       const ctx = FS.audio.ctx();
       const tuning = FS.currentTuning().notes;
       let base = tuning[0];

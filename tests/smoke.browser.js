@@ -375,8 +375,9 @@ function settingsHelpers(page) {
     await inSettings(() => page.click('#settings-dialog .seg[aria-label="Playback speed"] button:has-text("Medium")'));
     await shot('arpeggios');
 
-    // Stop cuts the notes already queued on the audio clock, not just the highlighting: no note that
-    // would start after the press may still sound (checked on scales).
+    // Scales and arpeggios have no Stop: Play stays labelled Play, and pressing it again cuts the notes
+    // still queued on the audio clock and starts over from the first note (no note that would start
+    // after the press may still sound).
     await page.evaluate(() => {
       const start = AudioBufferSourceNode.prototype.start;
       const stop = AudioBufferSourceNode.prototype.stop;
@@ -384,49 +385,28 @@ function settingsHelpers(page) {
       window.__stops = [];
       AudioBufferSourceNode.prototype.start = function (w) { window.__starts.push([this, w]); return start.apply(this, arguments); };
       AudioBufferSourceNode.prototype.stop = function (w) { window.__stops.push([this, w]); return stop.apply(this, arguments); };
-      document.addEventListener('pointerdown', () => (window.__pressAt = FS.audio.ctx().currentTime), true);
     });
-    for (const tab of ['scales']) {
+    for (const tab of ['scales', 'arpeggios']) {
       await page.click(`#tab-${tab}`);
       await page.waitForTimeout(200);
-      await page.evaluate(() => { window.__starts = []; window.__stops = []; window.__pressAt = null; });
+      await page.evaluate(() => { window.__starts = []; window.__stops = []; });
       await page.click('.now-bar.show .nb-action'); // play
       await page.waitForTimeout(900);
-      check(`${P} ${tab}: playing shows Stop`, (await page.textContent('.now-bar.show .nb-action')).trim(), '■ Stop');
-      await page.evaluate(() => (window.__pressAt = null));
-      await page.click('.now-bar.show .nb-action'); // stop, halfway through
+      check(`${P} ${tab}: playing keeps the Play label`, (await page.textContent('.now-bar.show .nb-action')).trim(), '▶ Play');
+      const oldCount = await page.evaluate(() => { window.__pressAt = FS.audio.ctx().currentTime; return window.__starts.length; });
+      await page.click('.now-bar.show .nb-action'); // play again, halfway through
       await page.waitForTimeout(150);
-      const { queued, sounding } = await page.evaluate(() => {
+      const restart = await page.evaluate((n) => {
         const cut = window.__pressAt;
-        const later = window.__starts.filter(([, w]) => w > cut + 0.1);
-        const still = later.filter(([n, w]) => !window.__stops.some(([m, t]) => m === n && t !== undefined && t <= w));
-        return { queued: later.length, sounding: still.length };
-      });
-      check(`${P} ${tab}: stop cuts the notes still queued`, `${queued > 0 ? 'queued' : 'none queued'}, ${sounding} still sound`, 'queued, 0 still sound');
-      check(`${P} ${tab}: stop returns the button to Play`, (await page.textContent('.now-bar.show .nb-action')).trim(), /^▶ Play/);
+        const old = window.__starts.slice(0, n).filter(([, w]) => w > cut + 0.1); // notes still to come
+        const cutOld = old.filter(([m, w]) => window.__stops.some(([k, t]) => k === m && t !== undefined && t <= w));
+        const fresh = window.__starts.slice(n).map(([, w]) => w - cut);
+        return { old: old.length, cutOld: cutOld.length, fresh: fresh.length, first: fresh.length ? Math.min(...fresh) : null };
+      }, oldCount);
+      check(`${P} ${tab}: play again restarts`, restart.fresh > 0 && restart.first < 0.2 ? 'restarted at once' : 'no restart', 'restarted at once');
+      check(`${P} ${tab}: restart cuts the old notes`, restart.old === restart.cutOld ? (restart.old ? 'all cut' : 'none queued') : `${restart.old - restart.cutOld} left`, restart.old ? 'all cut' : 'queued');
+      await page.waitForTimeout(3000); // let it finish before the next tab
     }
-
-    // Arpeggios have no Stop: Play stays labelled Play, and pressing it again cuts the notes still
-    // queued and starts the arpeggio over from its first note.
-    await page.click('#tab-arpeggios');
-    await page.waitForTimeout(200);
-    await page.evaluate(() => { window.__starts = []; window.__stops = []; window.__pressAt = null; });
-    await page.click('.now-bar.show .nb-action');
-    await page.waitForTimeout(900);
-    check(`${P} arpeggios: playing keeps the Play label`, (await page.textContent('.now-bar.show .nb-action')).trim(), '▶ Play');
-    const oldCount = await page.evaluate(() => { window.__pressAt = FS.audio.ctx().currentTime; return window.__starts.length; });
-    await page.click('.now-bar.show .nb-action'); // play again, halfway through
-    await page.waitForTimeout(150);
-    const restart = await page.evaluate((n) => {
-      const cut = window.__pressAt;
-      const old = window.__starts.slice(0, n).filter(([, w]) => w > cut + 0.1); // notes still to come
-      const cutOld = old.filter(([m, w]) => window.__stops.some(([k, t]) => k === m && t !== undefined && t <= w));
-      const fresh = window.__starts.slice(n).map(([, w]) => w - cut);
-      return { old: old.length, cutOld: cutOld.length, fresh: fresh.length, first: fresh.length ? Math.min(...fresh) : null };
-    }, oldCount);
-    check(`${P} arpeggios: play again restarts`, `${restart.fresh > 0 && restart.first < 0.2 ? 'restarted at once' : 'no restart'}`, 'restarted at once');
-    check(`${P} arpeggios: restart cuts the old notes`, restart.old === restart.cutOld ? (restart.old ? 'all cut' : 'none queued') : `${restart.old - restart.cutOld} left`, restart.old ? 'all cut' : 'queued');
-    await page.waitForTimeout(3000); // let it finish before the tests below
 
     // Vertical board (phones): Chords and Arpeggios crop to the shape, with a whole-neck toggle.
     if (name === 'phone') {
